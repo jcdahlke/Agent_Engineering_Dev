@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip show *)",
+      "Bash(python -c \"import langgraph; print\\(dir\\(langgraph\\)\\)\")",
+      "Bash(python -c \"from langgraph.graph import StateGraph, START, END; print\\('OK'\\)\")",
+      "Bash(python -c ' *)"
+    ]
+  }
+}

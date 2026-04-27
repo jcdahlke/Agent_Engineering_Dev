@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LangGraph — Advanced Research Multi-Agent System</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    /* ── Variables ──────────────────────────────────────────────────────── */
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --teal:      #1fb8cd;
+      --teal-dim:  #0f7a8a;
+      --green:     #3fb950;
+      --yellow:    #d29922;
+      --red:       #f85149;
+      --purple:    #a371f7;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --radius:    12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Slide container ────────────────────────────────────────────────── */
+    #deck {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 48px 64px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      pointer-events: none;
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    .slide.exit-left {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Typography ─────────────────────────────────────────────────────── */
+    h1 { font-size: 3rem; font-weight: 700; line-height: 1.1; }
+    h2 { font-size: 2rem; font-weight: 700; margin-bottom: 24px; color: var(--teal); }
+    h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 10px; }
+    p  { line-height: 1.7; color: var(--muted); font-size: 1.05rem; }
+    .accent { color: var(--teal); }
+    .subtitle { font-size: 1.3rem; color: var(--muted); margin-top: 16px; }
+    .tag {
+      display: inline-block;
+      background: var(--teal-dim);
+      color: var(--teal);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    /* ── Cards ──────────────────────────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      gap: 16px;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .card-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+    .card.highlight { border-color: var(--teal); }
+    .card h3 { color: var(--text); }
+    .card p  { font-size: 0.95rem; margin-top: 6px; }
+    .card .icon { font-size: 1.8rem; margin-bottom: 8px; }
+
+    /* ── Agent flow diagram ─────────────────────────────────────────────── */
+    .mermaid-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ── Tables ─────────────────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      max-width: 1000px;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    .data-table th {
+      background: var(--teal-dim);
+      color: var(--text);
+      padding: 10px 16px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .data-table td {
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--surface); color: var(--text); }
+    code {
+      background: #1f2937;
+      color: var(--teal);
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.85em;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── Pro/Con lists ──────────────────────────────────────────────────── */
+    .pro-con-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+    }
+    .pro-list, .con-list { list-style: none; padding: 0; }
+    .pro-list li::before { content: "✓ "; color: var(--green); font-weight: 700; }
+    .con-list li::before { content: "✗ "; color: var(--red); font-weight: 700; }
+    .pro-list li, .con-list li {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.97rem;
+      line-height: 1.5;
+    }
+    .pro-list li:last-child, .con-list li:last-child { border-bottom: none; }
+
+    /* ── Feature chips ──────────────────────────────────────────────────── */
+    .feature-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      max-width: 1000px;
+    }
+    .feature-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 0.88rem;
+      text-align: center;
+      min-width: 180px;
+    }
+    .feature-chip .chip-title { color: var(--teal); font-weight: 600; font-size: 0.93rem; }
+    .feature-chip .chip-desc  { color: var(--muted); font-size: 0.82rem; margin-top: 4px; }
+
+    /* ── Use case cards ─────────────────────────────────────────────────── */
+    .use-case {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--teal);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .use-case h3 { color: var(--text); font-size: 1rem; }
+    .use-case p  { font-size: 0.9rem; margin-top: 4px; }
+
+    /* ── Title slide ─────────────────────────────────────────────────────── */
+    #slide-title { text-align: center; gap: 0; }
+    .title-logo {
+      font-size: 4rem;
+      margin-bottom: 24px;
+    }
+    .byline {
+      margin-top: 32px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    /* ── Agent roles ─────────────────────────────────────────────────────── */
+    .agent-card {
+      border-left: 4px solid var(--teal);
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+    .agent-card .agent-name { font-weight: 700; font-size: 1rem; color: var(--teal); }
+    .agent-card .agent-model { color: var(--muted); font-size: 0.82rem; margin-bottom: 6px; }
+    .agent-card ul { padding-left: 16px; color: var(--muted); font-size: 0.88rem; }
+    .agent-card ul li { padding: 2px 0; }
+
+    /* ── Navigation ─────────────────────────────────────────────────────── */
+    #nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 14px 24px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .nav-btn:hover { background: var(--teal-dim); border-color: var(--teal); }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+    #slide-counter { color: var(--muted); font-size: 0.9rem; min-width: 80px; text-align: center; }
+
+    .dot-row { display: flex; gap: 8px; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .dot.active { background: var(--teal); }
+
+    /* ── Slide-specific layout tweaks ───────────────────────────────────── */
+    .slide-content {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .slide-header {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    /* ── State table helpers ─────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .badge-add  { background: #1a3a2a; color: var(--green); }
+    .badge-msgs { background: #1a2a3a; color: #58a6ff; }
+    .badge-owrt { background: #2a1a1a; color: var(--muted); }
+
+    /* ── Keyboard hint ──────────────────────────────────────────────────── */
+    .kbd-hint {
+      position: fixed;
+      bottom: 70px;
+      right: 20px;
+      color: var(--border);
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ════════════════════════ SLIDE 1: TITLE ════════════════════════════ -->
+  <div class="slide active" id="slide-title">
+    <div class="title-logo">🦜🔗</div>
+    <div class="tag">BYU Agent Engineering</div>
+    <h1>Advanced Research<br><span class="accent">Multi-Agent System</span></h1>
+    <p class="subtitle">Built with <strong style="color:var(--teal)">LangGraph</strong> + OpenAI</p>
+    <p class="byline">5 specialized AI agents · Supervisor orchestration · Human-in-the-loop<br>
+      Streaming · Checkpointing · Long-term memory</p>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 2: WHAT IS LANGGRAPH ═══════════════ -->
+  <div class="slide" id="slide-what">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Overview</div>
+        <h2>What is LangGraph?</h2>
+        <p>A low-level framework by LangChain for building <strong style="color:var(--text)">stateful, cyclical multi-agent systems</strong> as explicit graphs.</p>
+      </div>
+      <div class="card-grid cols-3" style="max-width:900px">
+        <div class="card highlight">
+          <div class="icon">🔄</div>
+          <h3>Cycles & Loops</h3>
+          <p>Unlike simple DAG frameworks, LangGraph supports cycles — agents can loop, retry, and revisit steps.</p>
+        </div>
+        <div class="card highlight">
+          <div class="icon">💾</div>
+          <h3>Persistent State</h3>
+          <p>Every node reads and writes a shared typed state. Checkpointing saves state at every step for resume and time-travel.</p>
+        </div>
+        <div class="card highlight">
+          <div class="icon">🎮</div>
+          <h3>Human-in-the-Loop</h3>
+          <p>First-class <code>interrupt()</code> support — pause mid-execution for human review, then resume seamlessly.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🌊</div>
+          <h3>Streaming</h3>
+          <p>Stream token-by-token LLM output, per-node state updates, or custom structured events in real time.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🗺️</div>
+          <h3>Visualization</h3>
+          <p>Built-in Mermaid and ASCII diagram generation. Visualize exactly what your graph does before running it.</p>
+        </div>
+        <div class="card">
+          <div class="icon">⚡</div>
+          <h3>Production-Ready</h3>
+          <p>RetryPolicy, error handling, async support, SQLite persistence, and LangSmith tracing out of the box.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 3: GRAPH ARCHITECTURE ═══════════════ -->
+  <div class="slide" id="slide-arch">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Architecture</div>
+        <h2>Graph Topology</h2>
+        <p>A supervisor orchestrates 4 specialist agents. Dashed lines = conditional edges.</p>
+      </div>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#1fb8cd', 'primaryTextColor': '#e6edf3', 'primaryBorderColor': '#30363d', 'lineColor': '#8b949e', 'secondaryColor': '#161b22', 'tertiaryColor': '#0d1117', 'edgeLabelBackground':'#161b22', 'clusterBkg':'#161b22'}}}%%
+flowchart TD
+    S([START]) --> SUP
+
+    SUP[🎯 Supervisor<br/>Orchestrator]
+    SUP -.->|call_researcher| RES
+    SUP -.->|call_analyzer| ANA
+    SUP -.->|call_writer| WRI
+    SUP -.->|call_critic| CRI
+    SUP -.->|finish_research| E([END])
+
+    RES[🔍 Researcher<br/>ReAct Loop] --> SUP
+    ANA[📊 Analyzer<br/>Structured Output] --> SUP
+    WRI[✍️ Writer<br/>Report Generator] --> CRI
+
+    CRI{🔍 Critic<br/>Quality Gate}
+    CRI -.->|approved ≥ 0.7| E
+    CRI -.->|revision needed| SUP
+
+    style SUP fill:#1a3a4a,stroke:#1fb8cd,color:#e6edf3
+    style RES fill:#1a2a3a,stroke:#3fb950,color:#e6edf3
+    style ANA fill:#2a2a1a,stroke:#d29922,color:#e6edf3
+    style WRI fill:#2a1a3a,stroke:#a371f7,color:#e6edf3
+    style CRI fill:#3a1a1a,stroke:#f85149,color:#e6edf3
+    style S  fill:#1fb8cd,stroke:#1fb8cd,color:#0d1117
+    style E  fill:#3fb950,stroke:#3fb950,color:#0d1117
+        </div>
+      </div>
+      <div style="display:flex;gap:20px;font-size:0.82rem;color:var(--muted)">
+        <span>→ Fixed edge</span>
+        <span>-.-> Conditional edge</span>
+        <span>{ } Decision node</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 4: HOW IT WORKS ═════════════════════ -->
+  <div class="slide" id="slide-how">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">How It Works</div>
+        <h2>Agent Roles</h2>
+      </div>
+      <div class="card-grid cols-2" style="max-width:960px">
+        <div class="agent-card">
+          <div class="agent-name">🎯 Supervisor</div>
+          <div class="agent-model">gpt-4o-mini · temperature 0</div>
+          <ul>
+            <li>Reads full state, decides what to do next</li>
+            <li>Uses <em>handoff tools</em> — LLM picks <code>call_researcher</code>, <code>call_writer</code>, etc.</li>
+            <li>Tool call name becomes the routing signal</li>
+            <li>Saves/reads long-term memory via <code>InMemoryStore</code></li>
+          </ul>
+        </div>
+        <div class="agent-card" style="border-left-color:var(--green)">
+          <div class="agent-name" style="color:var(--green)">🔍 Researcher</div>
+          <div class="agent-model">gpt-4o-mini · manual ReAct loop</div>
+          <ul>
+            <li>Tavily / DuckDuckGo web search</li>
+            <li>arXiv academic paper search</li>
+            <li>Wikipedia background lookup</li>
+            <li>Page scraping via BeautifulSoup</li>
+            <li>Emits live progress via <code>StreamWriter</code></li>
+          </ul>
+        </div>
+        <div class="agent-card" style="border-left-color:var(--yellow)">
+          <div class="agent-name" style="color:var(--yellow)">📊 Analyzer</div>
+          <div class="agent-model">gpt-4o · structured output (Pydantic)</div>
+          <ul>
+            <li>Reads all raw content from state</li>
+            <li>Runs Python code via <code>PythonREPLTool</code></li>
+            <li>Returns typed <code>AnalysisResult</code> with confidence score</li>
+            <li>Signals if more research is needed</li>
+          </ul>
+        </div>
+        <div class="agent-card" style="border-left-color:var(--purple)">
+          <div class="agent-name" style="color:var(--purple)">✍️ Writer</div>
+          <div class="agent-model">gpt-4o · structured output (Pydantic)</div>
+          <ul>
+            <li>Synthesizes findings → structured <code>ResearchReport</code></li>
+            <li>Renders to Markdown with citations</li>
+            <li>Addresses critique from previous cycles</li>
+            <li>Incorporates human feedback when provided</li>
+          </ul>
+        </div>
+      </div>
+      <div class="agent-card" style="border-left-color:var(--red);max-width:960px;width:100%">
+        <div class="agent-name" style="color:var(--red)">🔍 Critic</div>
+        <div class="agent-model">gpt-4o-mini · structured output + interrupt()</div>
+        <ul style="columns:2">
+          <li>Scores draft 0.0–1.0 with rubric</li>
+          <li>Returns typed <code>CritiqueResult</code> with strengths/weaknesses</li>
+          <li>Approves (≥0.7) → graph exits to END</li>
+          <li>Calls <code>interrupt()</code> when score &lt;0.4 or sensitive topic</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 5: STATE MANAGEMENT ════════════════ -->
+  <div class="slide" id="slide-state">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">State</div>
+        <h2>Shared State Design</h2>
+        <p>Every node reads and writes <code>ResearchState</code>. Annotated reducers control how updates are merged.</p>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Reducer</th><th>Purpose</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>messages</code></td><td>list[BaseMessage]</td><td><span class="badge badge-msgs">add_messages</span></td><td>Full conversation; deduplicates by ID</td></tr>
+          <tr><td><code>sources_found</code></td><td>list[str]</td><td><span class="badge badge-add">operator.add</span></td><td>URLs accumulated across all researcher calls</td></tr>
+          <tr><td><code>raw_content</code></td><td>list[str]</td><td><span class="badge badge-add">operator.add</span></td><td>Scraped text chunks, appended each run</td></tr>
+          <tr><td><code>key_findings</code></td><td>list[str]</td><td><span class="badge badge-add">operator.add</span></td><td>Bullet findings, accumulated from analyzer</td></tr>
+          <tr><td><code>report_draft</code></td><td>str</td><td><span class="badge badge-owrt">overwrite</span></td><td>Latest draft — writer replaces each cycle</td></tr>
+          <tr><td><code>quality_score</code></td><td>float</td><td><span class="badge badge-owrt">overwrite</span></td><td>Most recent critic score (0–1)</td></tr>
+          <tr><td><code>task_complete</code></td><td>bool</td><td><span class="badge badge-owrt">overwrite</span></td><td>Supervisor sets True to trigger END</td></tr>
+          <tr><td><code>human_feedback</code></td><td>Optional[str]</td><td><span class="badge badge-owrt">overwrite</span></td><td>Populated via interrupt() resume value</td></tr>
+        </tbody>
+      </table>
+      <div class="card-grid cols-3" style="max-width:800px;margin-top:4px">
+        <div class="card"><h3 style="color:var(--green);font-size:0.9rem">operator.add</h3><p style="font-size:0.85rem">List fields <em>accumulate</em> — no node needs to read-then-append manually.</p></div>
+        <div class="card"><h3 style="color:#58a6ff;font-size:0.9rem">add_messages</h3><p style="font-size:0.85rem">Deduplicates by message ID — handles OpenAI tool-call round-trips correctly.</p></div>
+        <div class="card"><h3 style="color:var(--muted);font-size:0.9rem">overwrite</h3><p style="font-size:0.85rem">Scalar fields like <code>report_draft</code> are the <em>current</em> state — last write wins.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 6: KEY FEATURES ════════════════════ -->
+  <div class="slide" id="slide-features">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Features</div>
+        <h2>LangGraph Features Used</h2>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-chip">
+          <div class="chip-title">StateGraph</div>
+          <div class="chip-desc">Core graph class with typed state</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">Annotated Reducers</div>
+          <div class="chip-desc">add_messages · operator.add · overwrite</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">Conditional Edges</div>
+          <div class="chip-desc">Routing functions read state to decide next node</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">interrupt() + Command</div>
+          <div class="chip-desc">Mid-node pause for human review & resume</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">MemorySaver</div>
+          <div class="chip-desc">Per-thread checkpoint at every step</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">InMemoryStore</div>
+          <div class="chip-desc">Cross-thread long-term agent memory</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">StreamWriter</div>
+          <div class="chip-desc">Custom structured progress events</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">stream_mode="updates"</div>
+          <div class="chip-desc">Per-node state delta streaming</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">stream_mode="custom"</div>
+          <div class="chip-desc">Arbitrary structured event streaming</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">RetryPolicy</div>
+          <div class="chip-desc">Auto-retry on rate limits & transient errors</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">with_structured_output</div>
+          <div class="chip-desc">Pydantic-typed LLM responses</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">get_state_history()</div>
+          <div class="chip-desc">Time-travel debugging across checkpoints</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 7: PROS & CONS ═════════════════════ -->
+  <div class="slide" id="slide-procon">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Evaluation</div>
+        <h2>Pros &amp; Cons of LangGraph</h2>
+      </div>
+      <div class="pro-con-grid">
+        <div>
+          <div class="card" style="margin-bottom:16px;border-color:var(--green)">
+            <h3 style="color:var(--green)">✓ Strengths</h3>
+          </div>
+          <ul class="pro-list">
+            <li><strong>Fine-grained control</strong> — you own every edge and routing decision; no magic</li>
+            <li><strong>First-class HITL</strong> — <code>interrupt()</code> pauses mid-node, full state preserved</li>
+            <li><strong>Persistence built in</strong> — MemorySaver/SqliteSaver checkpoint every step automatically</li>
+            <li><strong>Multiple streaming modes</strong> — tokens, node updates, custom events</li>
+            <li><strong>Visualizable</strong> — ASCII + Mermaid diagrams generated from the graph itself</li>
+            <li><strong>Time-travel debugging</strong> — inspect or rewind to any past checkpoint</li>
+            <li><strong>Production features</strong> — RetryPolicy, async, LangSmith tracing</li>
+            <li><strong>Framework-agnostic nodes</strong> — any Python function can be a node</li>
+          </ul>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:16px;border-color:var(--red)">
+            <h3 style="color:var(--red)">✗ Limitations</h3>
+          </div>
+          <ul class="con-list">
+            <li><strong>Verbose boilerplate</strong> — simple tasks need a lot of scaffolding vs. CrewAI/AutoGen</li>
+            <li><strong>Steep learning curve</strong> — reducers, state channels, and routing require deep understanding</li>
+            <li><strong>No built-in planner</strong> — you must design the graph topology yourself</li>
+            <li><strong>Overkill for simple tasks</strong> — a single LLM call doesn't need a graph</li>
+            <li><strong>LangChain dependency</strong> — tight coupling to the LangChain ecosystem</li>
+            <li><strong>Debugging complexity</strong> — tracing issues across many nodes can be difficult without LangSmith</li>
+            <li><strong>Limited auto-parallelism</strong> — concurrent nodes require explicit <code>Send</code> fan-out</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 8: USE CASES ══════════════════════ -->
+  <div class="slide" id="slide-uses">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Use Cases</div>
+        <h2>When to Use LangGraph</h2>
+        <p>LangGraph shines when your agent needs <strong style="color:var(--text)">cycles, state, and oversight</strong>.</p>
+      </div>
+      <div class="card-grid cols-2" style="max-width:1000px">
+        <div class="use-case">
+          <h3>🔬 Research &amp; Analysis Pipelines</h3>
+          <p>Multi-step information gathering, analysis, synthesis, and quality review — exactly this demo. Checkpointing lets long-running sessions survive restarts.</p>
+        </div>
+        <div class="use-case">
+          <h3>💻 Coding Assistants</h3>
+          <p>Plan → write code → run tests → debug → rewrite loops. The cycle naturally maps to a LangGraph with conditional edges on test pass/fail.</p>
+        </div>
+        <div class="use-case">
+          <h3>🏢 Business Process Automation</h3>
+          <p>Multi-step workflows where human approval gates must be embedded at specific points — contract review, compliance checks, expense approvals.</p>
+        </div>
+        <div class="use-case">
+          <h3>🤖 Autonomous Agents</h3>
+          <p>Long-horizon tasks where an agent must plan, act, observe, and adapt over many steps. Persistent state across sessions is essential.</p>
+        </div>
+        <div class="use-case">
+          <h3>🧪 Evaluation Frameworks</h3>
+          <p>Generate → evaluate → regenerate loops for LLM output quality control. The critic pattern generalizes to any self-improving system.</p>
+        </div>
+        <div class="use-case">
+          <h3>🎓 Teaching Agent Concepts</h3>
+          <p>The explicit graph makes agent architectures <em>visible</em> and <em>debuggable</em> — ideal for education. Students see exactly how orchestration works.</p>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <p style="font-size:0.9rem">
+          <strong style="color:var(--teal)">Choose LangGraph</strong> when you need fine control, persistence, HITL, or streaming. &nbsp;
+          <strong style="color:var(--muted)">Choose CrewAI/AutoGen</strong> for faster prototyping with less boilerplate.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #deck -->
+
+<!-- Navigation -->
+<div id="nav">
+  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>← Prev</button>
+  <div class="dot-row" id="dots"></div>
+  <span id="slide-counter">1 / 8</span>
+  <button class="nav-btn" id="btn-next" onclick="navigate(1)">Next →</button>
+</div>
+
+<div class="kbd-hint">← → arrow keys to navigate</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      background: '#0d1117',
+      primaryColor: '#1fb8cd',
+      edgeLabelBackground: '#161b22',
+    },
+  });
+
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsContainer = document.getElementById('dots');
+  let current = 0;
+
+  // Build dot indicators
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  });
+
+  function updateNav() {
+    document.getElementById('btn-prev').disabled = current === 0;
+    document.getElementById('btn-next').disabled = current === slides.length - 1;
+    document.getElementById('slide-counter').textContent = `${current + 1} / ${slides.length}`;
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+  }
+
+  function goTo(index) {
+  if (index === current) return;
+
+  // 1. Determine direction
+  const isForward = index > current;
+
+  // 2. Cleanup all slides' positioning classes
+  slides.forEach(slide => {
+    slide.classList.remove('active', 'exit-left');
+  });
+
+  // 3. If we moved forward, the previous slide should slide out to the left
+  if (isForward) {
+    slides[current].classList.add('exit-left');
+  } 
+  // If we move backward, the current slide just disappears 
+  // (or you could add an 'exit-right' class for extra flair)
+
+  // 4. Set the new slide to active
+  current = index;
+  slides[current].classList.add('active');
+  
+  updateNav();
+}
+
+  function navigate(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < slides.length) goTo(next);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  });
+
+  updateNav();
+</script>
+</body>
+</html>
