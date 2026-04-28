@@ -4,7 +4,17 @@
       "Bash(pip show *)",
       "Bash(python -c \"import langgraph; print\\(dir\\(langgraph\\)\\)\")",
       "Bash(python -c \"from langgraph.graph import StateGraph, START, END; print\\('OK'\\)\")",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(pip download *)",
+      "Bash(curl -s \"https://pypi.org/pypi/crewai/0.11.2/json\")",
+      "Bash(python -c \"import sys, json; d=json.load\\(sys.stdin\\); print\\(d['info']['requires_dist'][:20] if d else 'no data'\\)\")",
+      "Bash(py -3.12 --version)",
+      "Bash(py -3.13 --version)",
+      "Bash(py -3.11 --version)",
+      "Bash(py --list)",
+      "WebSearch",
+      "Bash(pip index *)",
+      "Bash(pip install *)"
     ]
   }
 }

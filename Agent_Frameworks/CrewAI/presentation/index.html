@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CrewAI — Advanced Research Multi-Agent System</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    /* ── Variables ──────────────────────────────────────────────────────── */
+    :root {
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --border:      #30363d;
+      --purple:      #8b5cf6;
+      --purple-dim:  #4c1d95;
+      --purple-glow: #6d28d9;
+      --green:       #3fb950;
+      --yellow:      #d29922;
+      --red:         #f85149;
+      --teal:        #1fb8cd;
+      --orange:      #e36209;
+      --text:        #e6edf3;
+      --muted:       #8b949e;
+      --radius:      12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Slide container ────────────────────────────────────────────────── */
+    #deck {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 48px 64px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      pointer-events: none;
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    .slide.exit-left {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Typography ─────────────────────────────────────────────────────── */
+    h1 { font-size: 3rem; font-weight: 700; line-height: 1.1; }
+    h2 { font-size: 2rem; font-weight: 700; margin-bottom: 24px; color: var(--purple); }
+    h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 10px; }
+    p  { line-height: 1.7; color: var(--muted); font-size: 1.05rem; }
+    .accent  { color: var(--purple); }
+    .subtitle { font-size: 1.3rem; color: var(--muted); margin-top: 16px; }
+    .tag {
+      display: inline-block;
+      background: var(--purple-dim);
+      color: var(--purple);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-top: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── Nav bar ────────────────────────────────────────────────────────── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px 32px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    nav button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    nav button:hover { background: var(--border); border-color: var(--purple); }
+    nav button:disabled { opacity: 0.3; cursor: default; }
+
+    .dots { display: flex; gap: 8px; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+    .dot.active { background: var(--purple); transform: scale(1.3); }
+
+    #slide-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      min-width: 80px;
+      text-align: center;
+    }
+
+    /* ── Slide 1: Title ──────────────────────────────────────────────────── */
+    .hero-icon {
+      font-size: 4rem;
+      margin-bottom: 24px;
+      filter: drop-shadow(0 0 20px var(--purple-glow));
+    }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; justify-content: center; }
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .badge span { color: var(--purple); font-weight: 600; }
+
+    /* ── Slide 2: Architecture ───────────────────────────────────────────── */
+    .arch-wrap {
+      width: 100%;
+      max-width: 900px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      overflow: auto;
+    }
+
+    /* Pulse glow on the manager node injected post-render */
+    @keyframes pulse-border {
+      0%, 100% { filter: drop-shadow(0 0 4px var(--purple-glow)); }
+      50%       { filter: drop-shadow(0 0 14px var(--purple)); }
+    }
+    .manager-pulse { animation: pulse-border 2s ease-in-out infinite; }
+
+    /* ── Slide 3: How it works ───────────────────────────────────────────── */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .step-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .step-num {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--purple);
+      margin-bottom: 6px;
+    }
+    .step-card h3 { font-size: 0.9rem; color: var(--text); margin-bottom: 6px; }
+    .step-card p  { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+    /* stagger delays */
+    .step-card:nth-child(1) { transition-delay: 0.05s; }
+    .step-card:nth-child(2) { transition-delay: 0.12s; }
+    .step-card:nth-child(3) { transition-delay: 0.19s; }
+    .step-card:nth-child(4) { transition-delay: 0.26s; }
+    .step-card:nth-child(5) { transition-delay: 0.33s; }
+    .step-card:nth-child(6) { transition-delay: 0.40s; }
+    .step-card:nth-child(7) { transition-delay: 0.47s; }
+    .step-card:nth-child(8) { transition-delay: 0.54s; }
+
+    /* ── Slide 4/5: Pros / Cons ──────────────────────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .pro-list, .con-list { list-style: none; }
+
+    .pro-list li, .con-list li {
+      display: flex;
+      gap: 10px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      color: var(--muted);
+    }
+
+    .pro-list li .icon { color: var(--green); flex-shrink: 0; font-size: 1rem; }
+    .con-list li .icon { color: var(--red);   flex-shrink: 0; font-size: 1rem; }
+    .pro-list li strong, .con-list li strong { color: var(--text); }
+
+    /* ── Slide 6: Use cases ──────────────────────────────────────────────── */
+    .use-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .use-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .use-card:hover { border-color: var(--purple); transform: translateY(-3px); }
+    .use-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .use-card h3 { font-size: 0.95rem; color: var(--text); margin-bottom: 6px; }
+    .use-card p  { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+    .compare-btn {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 10px 24px;
+      background: var(--purple-dim);
+      border: 1px solid var(--purple);
+      border-radius: 8px;
+      color: var(--purple);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    .compare-btn:hover { background: var(--purple-glow); color: #fff; }
+
+    .framework-note {
+      margin-top: 16px;
+      padding: 12px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      max-width: 700px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .framework-note strong { color: var(--purple); }
+  </style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ── Slide 1: Title ──────────────────────────────────────────────────── -->
+  <section class="slide active" id="s1">
+    <div class="hero-icon">🤖⚙️</div>
+    <h1>Advanced Research<br><span class="accent">Multi-Agent System</span></h1>
+    <p class="subtitle">Built with <strong>CrewAI</strong> + OpenAI</p>
+    <div class="badge-row">
+      <div class="badge"><span>4</span> specialist agents</div>
+      <div class="badge"><span>Hierarchical</span> process</div>
+      <div class="badge"><span>Flow</span> orchestration</div>
+      <div class="badge"><span>Memory</span> system</div>
+      <div class="badge"><span>Pydantic</span> outputs</div>
+      <div class="badge"><span>Custom</span> tools</div>
+    </div>
+    <div class="tag">BYU Agent Engineering Course</div>
+  </section>
+
+  <!-- ── Slide 2: Architecture ───────────────────────────────────────────── -->
+  <section class="slide" id="s2">
+    <h2>System Architecture</h2>
+    <div class="arch-wrap">
+      <div class="mermaid">
+flowchart TD
+    subgraph FLOW["ResearchFlow &nbsp; (@start / @listen / @router)"]
+        direction TB
+        S["@start<br/>kickoff_research()"] --> L1["@listen<br/>run_research_crew()"]
+        L1 --> R["@router<br/>quality_gate()"]
+        R -->|score ≥ 0.7| P["@listen<br/>publish_report()"]
+        R -->|score < 0.7| H["@listen<br/>handle_revision()"]
+    end
+
+    subgraph CREW["ResearchCrew &nbsp; [Process.hierarchical · memory=True · max_rpm=10]"]
+        direction TB
+        MGR["🧠 Auto-Manager<br/>(gpt-4o)"]
+        MGR --> AG1["Senior Researcher<br/>(gpt-4o-mini)"]
+        MGR --> AG2["Data Analyst<br/>(gpt-4o-mini)"]
+        MGR --> AG3["Technical Writer<br/>(gpt-4o)"]
+        MGR --> AG4["Editor / Critic<br/>(gpt-4o-mini)"]
+    end
+
+    subgraph TASKS["Task Pipeline"]
+        direction LR
+        T1["research_task<br/>(ResearchGathering)"] --> T2["analysis_task<br/>(AnalysisResult)"]
+        T2 --> T3["writing_task<br/>(ResearchReport)"]
+        T3 --> T4["editing_task<br/>(EditorialReview)"]
+        T4 --> T5["final_summary_task<br/>(str)"]
+    end
+
+    subgraph TOOLS["Tools"]
+        direction LR
+        TO1["SerperDevTool"]
+        TO2["WebsiteSearchTool"]
+        TO3["arxiv_search"]
+        TO4["scrape_webpage"]
+        TO5["analyze_text"]
+    end
+
+    L1 --> CREW
+    CREW --> TASKS
+    AG1 --> TO1 & TO2 & TO3 & TO4
+    AG2 --> TO5 & TO4
+
+    style MGR fill:#4c1d95,color:#e9d5ff,stroke:#8b5cf6
+    style FLOW fill:#1e1b4b,stroke:#6d28d9,color:#c4b5fd
+    style CREW fill:#0d1117,stroke:#30363d
+    style TASKS fill:#0d1117,stroke:#30363d
+    style TOOLS fill:#0d1117,stroke:#30363d
+    style AG1 fill:#064e3b,color:#6ee7b7,stroke:#10b981
+    style AG2 fill:#78350f,color:#fde68a,stroke:#f59e0b
+    style AG3 fill:#1e3a5f,color:#93c5fd,stroke:#3b82f6
+    style AG4 fill:#3b0764,color:#e9d5ff,stroke:#a855f7
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 3: How it works ───────────────────────────────────────────── -->
+  <section class="slide" id="s3">
+    <h2>How It Works</h2>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <h3>CLI Launch</h3>
+        <p><code>python runner.py --topic "AI" --mode flow</code> initializes ResearchFlow</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <h3>@start fires</h3>
+        <p>Flow maps <code>inputs={topic, depth}</code> onto typed FlowState, calls <code>kickoff_research()</code></p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <h3>@listen launches crew</h3>
+        <p><code>run_research_crew()</code> builds and starts the hierarchical ResearchCrew</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <h3>Manager delegates</h3>
+        <p>Auto-Manager (gpt-4o) reads all task descriptions and dynamically assigns work to agents</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">05</div>
+        <h3>Researcher gathers</h3>
+        <p>Senior Researcher runs SerperDevTool, arXiv search, and scrapes key pages → <code>ResearchGathering</code></p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">06</div>
+        <h3>Analyst synthesizes</h3>
+        <p>Data Analyst receives research via <code>context=[research_task]</code> → outputs <code>AnalysisResult</code></p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">07</div>
+        <h3>Writer drafts report</h3>
+        <p>Technical Writer uses both upstream contexts → produces structured <code>ResearchReport</code></p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">08</div>
+        <h3>@router quality gate</h3>
+        <p>Editor reviews → <code>EditorialReview</code>. @router routes to <em>publish</em> (≥0.7) or <em>revise</em></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Slide 4: Pros ──────────────────────────────────────────────────── -->
+  <section class="slide" id="s4">
+    <h2>CrewAI — Strengths</h2>
+    <div style="width:100%;max-width:900px">
+      <ul class="pro-list">
+        <li><span class="icon">✓</span><div><strong>Minimal boilerplate</strong> — role + goal + backstory define a fully functional agent in ~10 lines</div></li>
+        <li><span class="icon">✓</span><div><strong>Hierarchical process</strong> — auto-manager LLM dynamically delegates and re-assigns tasks; no manual routing logic</div></li>
+        <li><span class="icon">✓</span><div><strong>Built-in memory</strong> — short-term + long-term (SQLite + embeddings) + entity memory with a single <code>memory=True</code> flag</div></li>
+        <li><span class="icon">✓</span><div><strong>Task context chaining</strong> — <code>context=[task1, task2]</code> automatically injects upstream outputs into task prompts</div></li>
+        <li><span class="icon">✓</span><div><strong>Pydantic structured outputs</strong> — <code>output_pydantic=Model</code> on any task enforces typed, validated responses</div></li>
+        <li><span class="icon">✓</span><div><strong>Flows for production</strong> — <code>@start</code>/<code>@listen</code>/<code>@router</code> provides a full state machine above crews</div></li>
+        <li><span class="icon">✓</span><div><strong>Built-in rate limiting</strong> — <code>max_rpm</code> on the Crew throttles all LLM calls collectively; no custom retry logic needed</div></li>
+        <li><span class="icon">✓</span><div><strong>Rich callback system</strong> — <code>task_callback</code> + <code>step_callback</code> give per-task and per-step visibility</div></li>
+        <li><span class="icon">✓</span><div><strong>Extensive tool ecosystem</strong> — 20+ built-in crewai-tools (search, scraping, DB, GitHub, email) plus easy custom <code>@tool</code> functions</div></li>
+        <li><span class="icon">✓</span><div><strong>Framework-opinionated</strong> — convention over configuration reduces decision fatigue; sensible defaults for most use cases</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── Slide 5: Cons ──────────────────────────────────────────────────── -->
+  <section class="slide" id="s5">
+    <h2>CrewAI — Limitations</h2>
+    <div style="width:100%;max-width:900px">
+      <ul class="con-list">
+        <li><span class="icon">✗</span><div><strong>Opaque hierarchical control</strong> — the manager's delegation logic is a black box; hard to debug unexpected task ordering</div></li>
+        <li><span class="icon">✗</span><div><strong>No explicit graph topology</strong> — unlike LangGraph, there's no visual or code-level graph; agent connections are implicit and dynamic</div></li>
+        <li><span class="icon">✗</span><div><strong>Memory adds latency and cost</strong> — <code>memory=True</code> triggers OpenAI embedding API calls for every task output stored and recalled</div></li>
+        <li><span class="icon">✗</span><div><strong>Manager token overhead</strong> — <code>Process.hierarchical</code> generates extra LLM calls per delegation round; can 2-3× token usage vs. sequential</div></li>
+        <li><span class="icon">✗</span><div><strong>No native streaming</strong> — no token-level or node-level streaming comparable to LangGraph's <code>stream_mode</code>; output appears only after task completion</div></li>
+        <li><span class="icon">✗</span><div><strong>No built-in HITL interrupt/resume</strong> — no equivalent of LangGraph's <code>interrupt()</code> + <code>Command(resume=...)</code> pattern for human-in-the-loop</div></li>
+        <li><span class="icon">✗</span><div><strong>Context window explosion</strong> — all <code>context=[...]</code> task outputs are injected verbatim into the next task's prompt; can balloon token usage on long reports</div></li>
+        <li><span class="icon">✗</span><div><strong>Version coupling</strong> — <code>crewai</code> and <code>crewai-tools</code> versions must be compatible; mismatches cause silent failures or import errors</div></li>
+        <li><span class="icon">✗</span><div><strong>@router is single-level</strong> — Flows support one routing layer; nested conditional graphs require multiple Flow classes with explicit wiring</div></li>
+        <li><span class="icon">✗</span><div><strong>SERPER_API_KEY dependency</strong> — SerperDevTool raises <code>ValueError</code> at instantiation if the env var is missing; requires graceful guards in production code</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ── Slide 6: Use Cases ─────────────────────────────────────────────── -->
+  <section class="slide" id="s6">
+    <h2>When to Use CrewAI</h2>
+    <div class="use-grid">
+      <div class="use-card">
+        <div class="use-icon">⚡</div>
+        <h3>Rapid Research Automation</h3>
+        <p>Get a working multi-agent research pipeline in under 50 lines. Ideal when speed to prototype matters more than flow control.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">👥</div>
+        <h3>Role-Based Agent Teams</h3>
+        <p>When your problem naturally maps to human team roles — researcher, analyst, writer, editor — CrewAI's role metaphor is the most intuitive fit.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">📄</div>
+        <h3>Document Generation Pipelines</h3>
+        <p>Reports, summaries, audits, and documentation driven by specialist agents. Pydantic structured outputs ensure consistent formatting.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">📊</div>
+        <h3>Competitive Intelligence</h3>
+        <p>Researcher + analyst + writer crews for automated market analysis, product teardowns, and industry trend reports.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">🏭</div>
+        <h3>Content Production at Scale</h3>
+        <p>Blog posts, product descriptions, SEO content, and documentation generated by coordinated agent teams with quality review gates.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">🚀</div>
+        <h3>Prototype-to-Production</h3>
+        <p>Start with <code>Process.sequential</code> for prototyping, add <code>hierarchical</code> for complexity, wrap in Flows for production deployment.</p>
+      </div>
+    </div>
+    <div class="framework-note">
+      <strong>Choose CrewAI</strong> when you want fast, role-based agent teams with minimal boilerplate and built-in memory.<br>
+      <strong>Choose LangGraph</strong> when you need explicit graph topology, human-in-the-loop interrupts, or token-level streaming.
+    </div>
+    <a class="compare-btn" href="../../LangGraph/presentation/index.html">
+      ↔ Compare with LangGraph
+    </a>
+  </section>
+
+</div>
+
+<!-- ── Navigation ────────────────────────────────────────────────────────── -->
+<nav>
+  <button id="prev" onclick="go(-1)" disabled>← Prev</button>
+  <div class="dots" id="dots"></div>
+  <span id="slide-label">1 / 6</span>
+  <button id="next" onclick="go(1)">Next →</button>
+</nav>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'dark', themeVariables: {
+    primaryColor: '#4c1d95',
+    primaryTextColor: '#e9d5ff',
+    primaryBorderColor: '#8b5cf6',
+    lineColor: '#8b5cf6',
+    secondaryColor: '#0d1117',
+    tertiaryColor: '#161b22',
+    background: '#0d1117',
+    mainBkg: '#161b22',
+    nodeBorder: '#30363d',
+    clusterBkg: '#1e1b4b',
+    titleColor: '#e6edf3',
+    edgeLabelBackground: '#161b22',
+    fontSize: '14px',
+  }});
+
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  let current = 0;
+
+  // Build dots
+  const dotsEl = document.getElementById('dots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => go(i - current);
+    dotsEl.appendChild(d);
+  });
+
+  function go(delta) {
+    const prev = current;
+    current = Math.max(0, Math.min(slides.length - 1, current + delta));
+    if (prev === current) return;
+
+    slides[prev].classList.remove('active');
+    if (delta > 0) slides[prev].classList.add('exit-left');
+    setTimeout(() => slides[prev].classList.remove('exit-left'), 500);
+
+    slides[current].classList.add('active');
+
+    // Animate step cards on slide 3
+    if (current === 2) {
+      document.querySelectorAll('.step-card').forEach(c => c.classList.add('visible'));
+    }
+
+    document.querySelectorAll('.dot').forEach((d, i) =>
+      d.classList.toggle('active', i === current)
+    );
+    document.getElementById('slide-label').textContent = `${current + 1} / ${slides.length}`;
+    document.getElementById('prev').disabled = current === 0;
+    document.getElementById('next').disabled = current === slides.length - 1;
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+  });
+
+  // Add pulse glow to manager node after Mermaid renders
+  mermaid.init(undefined, '.mermaid').then(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.mermaid .node').forEach(node => {
+        if (node.textContent && node.textContent.includes('Auto-Manager')) {
+          node.classList.add('manager-pulse');
+        }
+      });
+    }, 800);
+  }).catch(() => {});
+</script>
+</body>
+</html>

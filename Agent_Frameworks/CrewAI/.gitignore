@@ -1,0 +1,33 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# CrewAI runtime artifacts (long-term memory SQLite + embeddings)
+.crew_memory/
+crew_memory/
+*.db
+*.sqlite
+*.sqlite3
+
+# Execution logs
+logs/
+*.log
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
