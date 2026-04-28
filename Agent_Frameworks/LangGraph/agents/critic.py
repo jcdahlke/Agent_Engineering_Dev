@@ -10,9 +10,8 @@ LangGraph patterns demonstrated:
 """
 from __future__ import annotations
 
-from typing import Any, Callable
-
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langgraph.types import StreamWriter
 from langchain_openai import ChatOpenAI
 from langgraph.types import interrupt
 from pydantic import BaseModel, Field
@@ -50,7 +49,7 @@ class CritiqueResult(BaseModel):
     )
 
 
-def critic_node(state: ResearchState, writer: Callable[[Any], None]) -> dict:
+def critic_node(state: ResearchState, writer: StreamWriter = lambda _: None) -> dict:
     draft = state.get("report_draft", "")
 
     if not draft:

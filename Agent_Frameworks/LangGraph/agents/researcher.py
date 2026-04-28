@@ -11,10 +11,10 @@ LangGraph patterns demonstrated:
 from __future__ import annotations
 
 import os
-from typing import Any, Callable
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_openai import ChatOpenAI
+from langgraph.types import StreamWriter
 
 from config import settings
 from state import ResearchState
@@ -43,7 +43,7 @@ Strategy:
 Use your tools systematically. When done, respond with a plain text summary of what you found."""
 
 
-def researcher_node(state: ResearchState, writer: Callable[[Any], None]) -> dict:
+def researcher_node(state: ResearchState, writer: StreamWriter = lambda _: None) -> dict:
     use_tavily = bool(os.getenv("TAVILY_API_KEY"))
     search_tools = get_search_tools(use_tavily=use_tavily)
     tool_map = {t.name: t for t in search_tools}

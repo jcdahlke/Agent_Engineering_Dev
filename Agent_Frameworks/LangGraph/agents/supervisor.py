@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 from typing import Annotated
 
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage, ToolMessage
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI
 from langgraph.store.base import BaseStore
@@ -133,7 +133,15 @@ def supervisor_node(state: ResearchState, store: BaseStore) -> dict:
         past_context=past_context,
     )
 
-    messages = [SystemMessage(content=system_content)] + list(state.get("messages", []))[-10:]
+    # The supervisor makes a pure routing decision from the structured state fields
+    # summarised in the system prompt — it does NOT need the shared message history.
+    # Including accumulated state["messages"] would interleave tool-call/ToolMessage
+    # pairs from other agents and trigger OpenAI 400 errors on malformed sequences.
+    from langchain_core.messages import HumanMessage as _HumanMessage
+    messages = [
+        SystemMessage(content=system_content),
+        _HumanMessage(content="Based on the current research state above, choose the next action."),
+    ]
     response: AIMessage = llm.invoke(messages)
 
     # Persist findings to long-term store for future sessions
@@ -153,8 +161,18 @@ def supervisor_node(state: ResearchState, store: BaseStore) -> dict:
     tool_name = response.tool_calls[0]["name"] if response.tool_calls else "call_researcher"
     task_complete = tool_name == "finish_research"
 
+    # OpenAI requires every tool_call AIMessage to be immediately followed by
+    # a ToolMessage for each tool_call_id — otherwise the next LLM call errors.
+    tool_responses = [
+        ToolMessage(
+            content=tc["args"].get("reason", tc["args"].get("summary", "dispatching")),
+            tool_call_id=tc["id"],
+        )
+        for tc in response.tool_calls
+    ]
+
     return {
-        "messages": [response],
+        "messages": [response] + tool_responses,
         "next_agent": ROUTING_MAP.get(tool_name, "researcher"),
         "current_agent": "supervisor",
         "iteration_count": state.get("iteration_count", 0) + 1,

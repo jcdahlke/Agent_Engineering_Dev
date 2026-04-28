@@ -9,10 +9,9 @@ LangGraph patterns demonstrated:
 """
 from __future__ import annotations
 
-from typing import Any, Callable
-
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
+from langgraph.types import StreamWriter
 from pydantic import BaseModel, Field
 
 from config import settings
@@ -49,7 +48,7 @@ class ResearchReport(BaseModel):
     word_count_estimate: int = Field(description="Rough word count of the full report")
 
 
-def writer_node(state: ResearchState, writer: Callable[[Any], None]) -> dict:
+def writer_node(state: ResearchState, writer: StreamWriter = lambda _: None) -> dict:
     llm = ChatOpenAI(
         model=settings.writer_model,
         temperature=0.7,

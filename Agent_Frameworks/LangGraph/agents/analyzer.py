@@ -10,9 +10,8 @@ LangGraph patterns demonstrated:
 """
 from __future__ import annotations
 
-from typing import Any, Callable
-
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langgraph.types import StreamWriter
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
@@ -64,7 +63,7 @@ class AnalysisResult(BaseModel):
     )
 
 
-def analyzer_node(state: ResearchState, writer: Callable[[Any], None]) -> dict:
+def analyzer_node(state: ResearchState, writer: StreamWriter = lambda _: None) -> dict:
     analysis_tools = get_analysis_tools()
     tool_map = {t.name: t for t in analysis_tools}
 

@@ -14,7 +14,7 @@ openai>=1.0.0
 tavily-python>=0.3.0
 duckduckgo-search>=6.0.0
 arxiv>=2.1.0
-Wikipedia-API>=0.6.0
+wikipedia>=1.4.0
 requests>=2.31.0
 beautifulsoup4>=4.12.0
 
