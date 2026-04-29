@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenAI Agent SDK — Advanced Research Multi-Agent System</title>
+  <style>
+    /* ── Variables ──────────────────────────────────────────────── */
+    :root {
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --border:      #30363d;
+      --green:       #10a37f;   /* OpenAI brand green */
+      --green-dim:   #0a3d2e;
+      --green-glow:  #0d7a5f;
+      --blue:        #58a6ff;
+      --yellow:      #d29922;
+      --red:         #f85149;
+      --purple:      #bc8cff;
+      --teal:        #39d353;
+      --text:        #e6edf3;
+      --muted:       #8b949e;
+      --radius:      12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Deck ────────────────────────────────────────────────────── */
+    #deck {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 60px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      pointer-events: none;
+      overflow-y: auto;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+    .slide.exit-left {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Typography ──────────────────────────────────────────────── */
+    h1 { font-size: 2.8rem; font-weight: 700; line-height: 1.15; text-align: center; }
+    h2 { font-size: 1.9rem; font-weight: 700; margin-bottom: 28px; color: var(--green); text-align: center; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+    p  { line-height: 1.7; color: var(--muted); font-size: 1rem; }
+    .accent   { color: var(--green); }
+    .subtitle { font-size: 1.2rem; color: var(--muted); margin-top: 14px; text-align: center; }
+
+    /* ── Nav ─────────────────────────────────────────────────────── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 14px 32px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    nav button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    nav button:hover { background: var(--border); border-color: var(--green); }
+    nav button:disabled { opacity: 0.3; cursor: default; }
+    .dots { display: flex; gap: 8px; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+    .dot.active { background: var(--green); transform: scale(1.3); }
+    #slide-label { font-size: 0.82rem; color: var(--muted); min-width: 72px; text-align: center; }
+
+    /* ── Cards ───────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: var(--green); transform: translateY(-2px); }
+    .card-icon  { font-size: 1.6rem; margin-bottom: 8px; }
+    .card h3    { font-size: 0.95rem; color: var(--text); margin-bottom: 6px; }
+    .card p     { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── Grids ───────────────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 860px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; max-width: 960px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; max-width: 1080px; }
+
+    /* ── Slide 1: Title ──────────────────────────────────────────── */
+    .hero-logo {
+      width: 80px; height: 80px;
+      background: var(--green-dim);
+      border: 2px solid var(--green);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      margin-bottom: 28px;
+      box-shadow: 0 0 30px rgba(16, 163, 127, 0.3);
+    }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; justify-content: center; }
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .badge span { color: var(--green); font-weight: 600; }
+
+    /* ── Slide 2: Feature cards ──────────────────────────────────── */
+    .feat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .feat-card:hover { border-color: var(--green); }
+    .feat-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .feat-card h3 { font-size: 0.95rem; color: var(--green); margin-bottom: 6px; }
+    .feat-card p  { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── Slide 3: Architecture SVG ───────────────────────────────── */
+    .arch-wrap {
+      width: 100%;
+      max-width: 900px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      overflow: auto;
+    }
+    .arch-wrap svg { width: 100%; height: auto; display: block; }
+
+    /* ── Slide 4: Agent table ────────────────────────────────────── */
+    .agent-table {
+      width: 100%;
+      max-width: 940px;
+      border-collapse: collapse;
+    }
+    .agent-table th {
+      background: var(--green-dim);
+      color: var(--green);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .agent-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+      vertical-align: top;
+    }
+    .agent-table td:first-child { color: var(--text); font-weight: 600; }
+    .agent-table tr:hover td { background: rgba(16,163,127,0.05); }
+    .tag-pill {
+      display: inline-block;
+      background: var(--green-dim);
+      color: var(--green);
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 0.75rem;
+      margin: 2px;
+      font-family: monospace;
+    }
+
+    /* ── Slide 5: Code snippets ──────────────────────────────────── */
+    .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 920px; }
+    .code-card {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .code-card h3 { font-size: 0.85rem; color: var(--green); margin-bottom: 10px; font-family: monospace; }
+    .code-card pre {
+      font-family: 'Courier New', monospace;
+      font-size: 0.76rem;
+      color: var(--text);
+      white-space: pre-wrap;
+      line-height: 1.55;
+    }
+    .kw  { color: #ff7b72; }  /* keywords */
+    .fn  { color: #d2a8ff; }  /* functions */
+    .str { color: #a5d6ff; }  /* strings */
+    .cm  { color: #8b949e; }  /* comments */
+    .nm  { color: var(--green); } /* names/types */
+
+    /* ── Slide 6: Step flow ──────────────────────────────────────── */
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; max-width: 1000px; }
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .step-card.visible { opacity: 1; transform: translateY(0); }
+    .step-card:nth-child(1) { transition-delay: 0.05s; }
+    .step-card:nth-child(2) { transition-delay: 0.12s; }
+    .step-card:nth-child(3) { transition-delay: 0.19s; }
+    .step-card:nth-child(4) { transition-delay: 0.26s; }
+    .step-card:nth-child(5) { transition-delay: 0.33s; }
+    .step-card:nth-child(6) { transition-delay: 0.40s; }
+    .step-card:nth-child(7) { transition-delay: 0.47s; }
+    .step-card:nth-child(8) { transition-delay: 0.54s; }
+    .step-num { font-size: 1.5rem; font-weight: 700; color: var(--green); margin-bottom: 6px; }
+    .step-card h3 { font-size: 0.88rem; color: var(--text); margin-bottom: 5px; }
+    .step-card p  { font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
+
+    /* ── Slides 7/8: Pros & Cons ─────────────────────────────────── */
+    .pc-list { list-style: none; width: 100%; max-width: 840px; }
+    .pc-list li {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .pc-list li .ico { flex-shrink: 0; font-size: 1rem; margin-top: 1px; }
+    .pc-list li strong { color: var(--text); }
+    .pro-ico { color: var(--teal); }
+    .con-ico { color: var(--red); }
+
+    /* ── Slide 9: Use cases + getting started ─────────────────────── */
+    .use-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; max-width: 900px; margin-bottom: 24px; }
+    .use-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .use-card:hover { border-color: var(--green); transform: translateY(-2px); }
+    .use-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .use-card h3 { font-size: 0.9rem; color: var(--text); margin-bottom: 5px; }
+    .use-card p  { font-size: 0.79rem; color: var(--muted); line-height: 1.4; }
+
+    .cmd-block {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      font-family: monospace;
+      font-size: 0.84rem;
+      color: var(--text);
+      line-height: 1.8;
+      width: 100%;
+      max-width: 680px;
+    }
+    .cmd-block .prompt { color: var(--green); }
+    .cmd-block .comment { color: var(--muted); }
+  </style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SLIDE 1 — Title
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="slide active" id="s1">
+    <div class="hero-logo">🤖</div>
+    <h1>Advanced Research<br><span class="accent">Multi-Agent System</span></h1>
+    <p class="subtitle">Built with <strong style="color:var(--green)">OpenAI Agent SDK</strong></p>
+    <div class="badge-row">
+      <div class="badge"><span>5</span> Specialized Agents</div>
+      <div class="badge"><span>10</span> Function Tools</div>
+      <div class="badge">Native <span>Handoffs</span></div>
+      <div class="badge">Input <span>Guardrails</span></div>
+      <div class="badge">Built-in <span>Tracing</span></div>
+      <div class="badge">Real-time <span>Streaming</span></div>
+      <div class="badge">Structured <span>Outputs</span></div>
+      <div class="badge"><span>AgentHooks</span> Lifecycle</div>
+    </div>
+    <p style="margin-top:24px; font-size:0.82rem;">
+      BYU Agent Engineering Course &nbsp;·&nbsp; Framework Exploration Series
+    </p>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SLIDE 2 — What is OpenAI Agent SDK
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="slide" id="s2">
+    <h2>What is OpenAI Agent SDK?</h2>
+    <div class="grid-3">
+      <div class="feat-card">
+        <div class="feat-icon">🧠</div>
+        <h3>Agent</h3>
+        <p>First-class agent objects with <code>name</code>, <code>instructions</code>, <code>tools</code>, <code>handoffs</code>, <code>model</code>, <code>model_settings</code>, <code>hooks</code>, and <code>input_guardrails</code> — all in one dataclass.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔀</div>
+        <h3>Native Handoffs</h3>
+        <p>Agents transfer control to each other via <code>handoff()</code>. The full conversation history is preserved across every transfer — no manual context passing.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔧</div>
+        <h3>Function Tools</h3>
+        <p><code>@function_tool</code> auto-generates a JSON schema from Python type annotations. A <code>RunContextWrapper[T]</code> first param is injected automatically for shared state access.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🛡️</div>
+        <h3>Guardrails</h3>
+        <p><code>@input_guardrail</code> / <code>@output_guardrail</code> run lightweight validation agents before or after the main agent. Tripping the wire aborts the run immediately.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📡</div>
+        <h3>Built-in Tracing</h3>
+        <p><code>trace()</code> context manager wraps any run and sends structured telemetry to OpenAI's tracing dashboard — zero config, no external service needed.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚡</div>
+        <h3>Streaming</h3>
+        <p><code>Runner.run_streamed()</code> returns a <code>RunResultStreaming</code>. Iterate <code>stream_events()</code> for raw tokens, handoff events, and completed run items in real time.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SLIDE 3 — System Architecture (SVG Graph)
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="slide" id="s3">
+    <h2>System Architecture</h2>
+    <div class="arch-wrap">
+      <svg viewBox="0 0 880 400" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', sans-serif">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#10a37f"/>
+          </marker>
+          <marker id="arr-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#f85149"/>
+          </marker>
+          <marker id="arr-dim" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#8b949e"/>
+          </marker>
+        </defs>
+
+        <!-- Guardrail shield -->
+        <rect x="300" y="10" width="280" height="40" rx="8" fill="#0a3d2e" stroke="#10a37f" stroke-width="1.5"/>
+        <text x="440" y="35" text-anchor="middle" fill="#10a37f" font-size="13" font-weight="600">🛡 Input Guardrail (TopicValidator)</text>
+
+        <!-- Arrow: Guardrail → Supervisor -->
+        <line x1="440" y1="50" x2="440" y2="78" stroke="#10a37f" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- SUPERVISOR -->
+        <rect x="330" y="80" width="220" height="52" rx="10" fill="#161b22" stroke="#58a6ff" stroke-width="2"/>
+        <text x="440" y="100" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="700">Supervisor</text>
+        <text x="440" y="118" text-anchor="middle" fill="#8b949e" font-size="10">Entry point · Routes via handoff()</text>
+
+        <!-- Arrow: Supervisor → Researcher -->
+        <line x1="440" y1="132" x2="440" y2="158" stroke="#10a37f" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="452" y="148" fill="#8b949e" font-size="10">handoff</text>
+
+        <!-- RESEARCHER -->
+        <rect x="290" y="160" width="300" height="64" rx="10" fill="#161b22" stroke="#10a37f" stroke-width="2"/>
+        <text x="440" y="182" text-anchor="middle" fill="#10a37f" font-size="13" font-weight="700">Researcher</text>
+        <text x="440" y="198" text-anchor="middle" fill="#8b949e" font-size="10">web_search · fetch_webpage</text>
+        <text x="440" y="212" text-anchor="middle" fill="#8b949e" font-size="10">arxiv_search · save_research_notes</text>
+
+        <!-- Arrow: Researcher → Analyzer -->
+        <line x1="440" y1="224" x2="440" y2="250" stroke="#10a37f" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="452" y="240" fill="#8b949e" font-size="10">handoff</text>
+
+        <!-- ANALYZER -->
+        <rect x="290" y="252" width="300" height="64" rx="10" fill="#161b22" stroke="#d29922" stroke-width="2"/>
+        <text x="440" y="274" text-anchor="middle" fill="#d29922" font-size="13" font-weight="700">Analyzer</text>
+        <text x="440" y="290" text-anchor="middle" fill="#8b949e" font-size="10">load_research_notes · save_analysis</text>
+        <text x="440" y="304" text-anchor="middle" fill="#8b949e" font-size="10">output_type=AnalysisResult</text>
+
+        <!-- Arrow: Analyzer → Writer -->
+        <line x1="440" y1="316" x2="440" y2="342" stroke="#10a37f" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="452" y="332" fill="#8b949e" font-size="10">handoff</text>
+
+        <!-- WRITER -->
+        <rect x="150" y="344" width="220" height="52" rx="10" fill="#161b22" stroke="#39d353" stroke-width="2"/>
+        <text x="260" y="364" text-anchor="middle" fill="#39d353" font-size="13" font-weight="700">Writer</text>
+        <text x="260" y="382" text-anchor="middle" fill="#8b949e" font-size="10">get_analysis · save_draft_report</text>
+
+        <!-- CRITIC -->
+        <rect x="510" y="344" width="220" height="52" rx="10" fill="#161b22" stroke="#bc8cff" stroke-width="2"/>
+        <text x="620" y="364" text-anchor="middle" fill="#bc8cff" font-size="13" font-weight="700">Critic</text>
+        <text x="620" y="382" text-anchor="middle" fill="#8b949e" font-size="10">get_draft_report · save_final_report</text>
+
+        <!-- Arrow: Analyzer → Writer (bend left) -->
+        <path d="M 440 344 Q 440 344 370 344" stroke="#10a37f" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+
+        <!-- Arrow: Writer → Critic -->
+        <line x1="370" y1="370" x2="510" y2="370" stroke="#10a37f" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="440" y="365" text-anchor="middle" fill="#8b949e" font-size="10">handoff</text>
+
+        <!-- Back-edge: Critic → Writer (arc over the top) -->
+        <path d="M 620 344 Q 620 310 440 300 Q 260 290 260 344" stroke="#f85149" stroke-width="1.5" stroke-dasharray="6 3" fill="none" marker-end="url(#arr-red)"/>
+        <text x="440" y="295" text-anchor="middle" fill="#f85149" font-size="10">score &lt; 7 → revision handoff</text>
+
+        <!-- Done arrow from Critic -->
+        <line x1="730" y1="370" x2="820" y2="370" stroke="#39d353" stroke-width="1.5" marker-end="url(#arr)"/>
+        <rect x="820" y="355" width="50" height="28" rx="6" fill="#0a3d2e" stroke="#39d353" stroke-width="1.5"/>
+        <text x="845" y="373" text-anchor="middle" fill="#39d353" font-size="11" font-weight="700">DONE</text>
+        <text x="775" y="360" text-anchor="middle" fill="#39d353" font-size="10">score ≥ 7</text>
+
+        <!-- Legend -->
+        <line x1="30" y1="20" x2="60" y2="20" stroke="#10a37f" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="65" y="24" fill="#8b949e" font-size="10">handoff</text>
+        <line x1="30" y1="38" x2="60" y2="38" stroke="#f85149" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#arr-red)"/>
+        <text x="65" y="42" fill="#8b949e" font-size="10">revision back-edge</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SLIDE 4 — Agent Roles
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="slide" id="s4">
+    <h2>Agent Roles</h2>
+    <table class="agent-table">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Model Var</th>
+          <th>SDK Features</th>
+          <th>Tools</th>
+          <th>Hands Off To</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>🎯 Supervisor</td>
+          <td><code>SUPERVISOR_MODEL</code></td>
+          <td>
+            <span class="tag-pill">input_guardrails</span>
+            <span class="tag-pill">ModelSettings</span>
+            <span class="tag-pill">AgentHooks</span>
+          </td>
+          <td><em>None — routing only</em></td>
+          <td>Researcher</td>
+        </tr>
+        <tr>
+          <td>🔍 Researcher</td>
+          <td><code>RESEARCHER_MODEL</code></td>
+          <td>
+            <span class="tag-pill">@function_tool</span>
+            <span class="tag-pill">RunContextWrapper</span>
+          </td>
+          <td>web_search, fetch_webpage, arxiv_search, save_notes</td>
+          <td>Analyzer</td>
+        </tr>
+        <tr>
+          <td>📊 Analyzer</td>
+          <td><code>ANALYST_MODEL</code></td>
+          <td>
+            <span class="tag-pill">RunContextWrapper</span>
+            <span class="tag-pill">save_analysis tool</span>
+          </td>
+          <td>load_notes, list_keys, save_analysis</td>
+          <td>Writer</td>
+        </tr>
+        <tr>
+          <td>✍️ Writer</td>
+          <td><code>WRITER_MODEL</code></td>
+          <td>
+            <span class="tag-pill">ModelSettings(temp=0.7)</span>
+            <span class="tag-pill">handoffs</span>
+          </td>
+          <td>get_analysis, get_draft_report, save_draft_report</td>
+          <td>Critic</td>
+        </tr>
+        <tr>
+          <td>🔬 Critic</td>
+          <td><code>CRITIC_MODEL</code></td>
+          <td>
+            <span class="tag-pill">output_type=CritiqueResult</span>
+            <span class="tag-pill">clone()</span>
+          </td>
+          <td>get_draft, save_final_report</td>
+          <td>Writer (revision) or Done</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SLIDE 5 — SDK Feature Deep-Dive (Code Snippets)
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="slide" id="s5">
+    <h2>SDK Feature Deep-Dive</h2>
+    <div class="code-grid">
+
+      <div class="code-card">
+        <h3>@function_tool + RunContextWrapper</h3>
+        <pre><span class="kw">@</span><span class="fn">function_tool</span>
+<span class="kw">def</span> <span class="fn">web_search</span>(
+    ctx: <span class="nm">RunContextWrapper</span>[<span class="nm">ResearchContext</span>],
+    query: <span class="nm">str</span>,
+    max_results: <span class="nm">int</span> = 5,
+) -> <span class="nm">str</span>:
+    <span class="str">"""Search the web using DuckDuckGo."""</span>
+    <span class="cm"># ctx.context is the shared ResearchContext</span>
+    ctx.context.source_urls.append(url)
+    <span class="kw">return</span> formatted_results</pre>
+      </div>
+
+      <div class="code-card">
+        <h3>handoff() + agent.clone()</h3>
+        <pre><span class="cm"># Resolve Critic ↔ Writer circular ref:</span>
+critic_v1 = <span class="fn">create_critic</span>(writer_agent=<span class="nm">None</span>)
+writer    = <span class="fn">create_writer</span>(critic_agent=critic_v1)
+
+<span class="cm"># Clone with the back-edge wired in:</span>
+critic = critic_v1.<span class="fn">clone</span>(
+    handoffs=[<span class="fn">handoff</span>(
+        writer,
+        tool_description_override=
+        <span class="str">"Send back for revision."</span>,
+    )]
+)</pre>
+      </div>
+
+      <div class="code-card">
+        <h3>@input_guardrail + structured output</h3>
+        <pre><span class="kw">class</span> <span class="nm">TopicValidation</span>(<span class="nm">BaseModel</span>):
+    is_valid: <span class="nm">bool</span>
+    reason: <span class="nm">str</span>
+
+<span class="kw">@</span><span class="fn">input_guardrail</span>
+<span class="kw">async def</span> <span class="fn">topic_safety_guardrail</span>(
+    ctx, agent, input
+) -> <span class="nm">GuardrailFunctionOutput</span>:
+    result = <span class="kw">await</span> <span class="nm">Runner</span>.<span class="fn">run</span>(
+        validator_agent, input
+    )
+    val = result.<span class="fn">final_output_as</span>(<span class="nm">TopicValidation</span>)
+    <span class="kw">return</span> <span class="nm">GuardrailFunctionOutput</span>(
+        tripwire_triggered=<span class="kw">not</span> val.is_valid
+    )</pre>
+      </div>
+
+      <div class="code-card">
+        <h3>trace() + Runner.run_streamed()</h3>
+        <pre><span class="kw">with</span> <span class="fn">trace</span>(<span class="str">"Research Pipeline"</span>):
+    result = <span class="nm">Runner</span>.<span class="fn">run_streamed</span>(
+        supervisor, prompt, context=ctx
+    )
+    <span class="kw">async for</span> event <span class="kw">in</span> result.<span class="fn">stream_events</span>():
+        <span class="kw">if</span> event.type == <span class="str">"raw_response_event"</span>:
+            <span class="cm"># print tokens live</span>
+            print(event.data.choices[0]
+                  .delta.content, end=<span class="str">""</span>)
+        <span class="kw">elif</span> event.type == <span class="str">"agent_updated_stream_event"</span>:
+            print(event.new_agent.name)</pre>
+      </div>
+
+      <div class="code-card">
+        <h3>AgentHooks lifecycle callbacks</h3>
+        <pre><span class="kw">class</span> <span class="nm">ResearchHooks</span>(<span class="nm">AgentHooks</span>[<span class="nm">ResearchContext</span>]):
+    <span class="kw">async def</span> <span class="fn">on_start</span>(self, ctx, agent):
+        console.print(<span class="str">f"▶ {agent.name}"</span>)
+
+    <span class="kw">async def</span> <span class="fn">on_tool_start</span>(self, ctx, agent, tool):
+        console.print(<span class="str">f"  → {tool.name}"</span>)
+
+    <span class="kw">async def</span> <span class="fn">on_handoff</span>(self, ctx, agent, source):
+        console.print(
+            <span class="str">f"{source.name} → {agent.name}"</span>
+        )</pre>
+      </div>
+
+      <div class="code-card">
+        <h3>ModelSettings + output_type</h3>
+        <pre><span class="nm">Agent</span>(
+    name=<span class="str">"Critic"</span>,
+    model_settings=<span class="nm">ModelSettings</span>(
+        temperature=<span class="str">0</span>,      <span class="cm"># deterministic</span>
+        max_tokens=<span class="str">1500</span>,
+    ),
+    output_type=<span class="nm">CritiqueResult</span>,  <span class="cm"># structured JSON</span>
+)
+
+<span class="cm"># Type-safe extraction:</span>
+critique = result.<span class="fn">final_output_as</span>(<span class="nm">CritiqueResult</span>)
+print(critique.quality_score)   <span class="cm"># float 0-10</span></pre>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SLIDE 6 — How a Run Works (8 steps)
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="slide" id="s6">
+    <h2>How a Run Works</h2>
+    <div class="steps" id="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <h3>CLI Input</h3>
+        <p><code>python runner.py --topic "X" --mode stream</code><br>Parsed by argparse; asyncio.run() starts the pipeline.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <h3>Guardrail Check</h3>
+        <p>TopicValidator agent evaluates the topic. Unsafe or nonsensical topics trip the wire before any research begins.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <h3>Supervisor Starts</h3>
+        <p><code>Runner.run(supervisor, prompt)</code> — hooks fire <code>on_start</code>. Supervisor immediately hands off to Researcher.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <h3>Research Phase</h3>
+        <p>Researcher calls <code>web_search</code>, <code>arxiv_search</code>, <code>fetch_webpage</code>. All findings saved via <code>save_research_notes</code>.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">05</div>
+        <h3>Analysis Phase</h3>
+        <p>Analyzer loads all notes, synthesizes key findings, and saves structured <code>AnalysisResult</code> to shared context.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">06</div>
+        <h3>Writing Phase</h3>
+        <p>Writer reads analysis, composes a full Markdown report with sections, then saves draft and hands off to Critic.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">07</div>
+        <h3>Critique &amp; Revision</h3>
+        <p>Critic scores the draft (0–10). If score &lt; 7, it hands back to Writer with specific instructions — up to 2 revisions.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">08</div>
+        <h3>Final Output</h3>
+        <p><code>save_final_report</code> marks completion. Rich console prints the report, quality score, sources, and agent path.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SLIDE 7 — Pros
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="slide" id="s7">
+    <h2>Pros of OpenAI Agent SDK</h2>
+    <ul class="pc-list">
+      <li><span class="ico pro-ico">✅</span><div><strong>Minimal boilerplate</strong> — An agent is a single <code>Agent()</code> call. No graph builders, no decorators, no YAML configs.</div></li>
+      <li><span class="ico pro-ico">✅</span><div><strong>Native handoffs</strong> — First-class <code>handoff()</code> primitive carries full conversation history across agent transfers automatically.</div></li>
+      <li><span class="ico pro-ico">✅</span><div><strong>Built-in tracing</strong> — <code>trace()</code> sends telemetry to OpenAI's dashboard. No external observability stack required.</div></li>
+      <li><span class="ico pro-ico">✅</span><div><strong>Typed shared context</strong> — <code>RunContextWrapper[T]</code> gives tools type-safe access to a shared dataclass — no globals, no external DB for simple pipelines.</div></li>
+      <li><span class="ico pro-ico">✅</span><div><strong>Input &amp; output guardrails</strong> — Safety validation is a first-class SDK primitive, not an afterthought.</div></li>
+      <li><span class="ico pro-ico">✅</span><div><strong>Structured outputs</strong> — <code>output_type=PydanticModel</code> forces valid JSON from any agent; extracted type-safely with <code>final_output_as()</code>.</div></li>
+      <li><span class="ico pro-ico">✅</span><div><strong>Streaming + hooks</strong> — Real-time token streaming and full lifecycle callbacks (<code>AgentHooks</code>) without any custom wiring.</div></li>
+      <li><span class="ico pro-ico">✅</span><div><strong>OpenAI-native</strong> — Maintained by OpenAI; guaranteed compatibility with all new models and API features the moment they ship.</div></li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SLIDE 8 — Cons
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="slide" id="s8">
+    <h2>Cons of OpenAI Agent SDK</h2>
+    <ul class="pc-list">
+      <li><span class="ico con-ico">⚠️</span><div><strong>OpenAI-only</strong> — The SDK is tightly coupled to OpenAI's API. Switching to Anthropic, Gemini, or open-source models requires a full rewrite.</div></li>
+      <li><span class="ico con-ico">⚠️</span><div><strong>No graph visualization</strong> — Unlike LangGraph's ASCII/Mermaid output or AutoGen's topology diagrams, there's no built-in way to visualize agent connections.</div></li>
+      <li><span class="ico con-ico">⚠️</span><div><strong>No persistent memory</strong> — The SDK has no built-in long-term memory store. You must add your own vector DB or key-value store for cross-session recall.</div></li>
+      <li><span class="ico con-ico">⚠️</span><div><strong>Flat state model</strong> — Context is a single shared object; there's no reducer pattern, branching, or merging like LangGraph's <code>Annotated</code> state.</div></li>
+      <li><span class="ico con-ico">⚠️</span><div><strong>Newer ecosystem</strong> — Released in 2025; fewer community tutorials, third-party integrations, and battle-tested patterns compared to LangChain or CrewAI.</div></li>
+      <li><span class="ico con-ico">⚠️</span><div><strong>No native HITL</strong> — Human-in-the-loop interrupts require custom tooling. LangGraph's <code>interrupt()</code> + <code>Command(resume=...)</code> is more ergonomic.</div></li>
+      <li><span class="ico con-ico">⚠️</span><div><strong>Limited orchestration primitives</strong> — No built-in parallel execution, retry policies on nodes, or conditional edge routing beyond what the LLM decides via handoffs.</div></li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       SLIDE 9 — Use Cases + Getting Started
+       ══════════════════════════════════════════════════════════════ -->
+  <section class="slide" id="s9">
+    <h2>Use Cases &amp; Getting Started</h2>
+    <div class="use-grid">
+      <div class="use-card">
+        <div class="use-icon">🔬</div>
+        <h3>Research Automation</h3>
+        <p>Automated literature reviews, competitive analysis, and due-diligence reports across web and academic sources.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">💬</div>
+        <h3>Customer Support</h3>
+        <p>Triage agent routes tickets to specialist agents (billing, tech, returns). Native handoffs preserve full chat context.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">🏭</div>
+        <h3>Multi-Step Pipelines</h3>
+        <p>Any task requiring sequential specialists: data collection → processing → validation → reporting.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">📄</div>
+        <h3>Document Generation</h3>
+        <p>Gather sources → outline → draft → edit → approve. Built-in guardrails catch harmful content before publishing.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">🛡️</div>
+        <h3>Safety-Critical Apps</h3>
+        <p>Input/output guardrails make it natural to add content moderation as a first-class pipeline step.</p>
+      </div>
+      <div class="use-card">
+        <div class="use-icon">📊</div>
+        <h3>Agentic Prototyping</h3>
+        <p>Fastest path from idea to working multi-agent demo. Minimal setup, no graph theory required.</p>
+      </div>
+    </div>
+    <div class="cmd-block">
+      <span class="comment"># Setup</span><br>
+      <span class="prompt">$</span> pip install -r requirements.txt<br>
+      <span class="prompt">$</span> cp .env.example .env &amp;&amp; <span style="color:#d29922">nano</span> .env<br><br>
+      <span class="comment"># Run</span><br>
+      <span class="prompt">$</span> python runner.py --topic <span style="color:#a5d6ff">"quantum computing"</span> --mode basic<br>
+      <span class="prompt">$</span> python runner.py --topic <span style="color:#a5d6ff">"AI in healthcare"</span> --mode stream --depth deep<br>
+      <span class="prompt">$</span> python runner.py --topic <span style="color:#a5d6ff">"climate solutions"</span> --mode verbose
+    </div>
+  </section>
+
+</div>
+
+<!-- ── Navigation ─────────────────────────────────────────────── -->
+<nav>
+  <button id="prev-btn" onclick="go(-1)" disabled>← Prev</button>
+  <div class="dots" id="dots"></div>
+  <span id="slide-label">1 / 9</span>
+  <button id="next-btn" onclick="go(1)">Next →</button>
+</nav>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total  = slides.length;
+  let current  = 0;
+
+  // Build dots
+  const dotsEl = document.getElementById('dots');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  });
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit-left');
+    setTimeout(() => slides[current].classList.remove('exit-left'), 450);
+
+    current = Math.max(0, Math.min(total - 1, n));
+    slides[current].classList.add('active');
+
+    // Update dots
+    document.querySelectorAll('.dot').forEach((d, i) =>
+      d.classList.toggle('active', i === current));
+
+    // Update label / buttons
+    document.getElementById('slide-label').textContent = `${current + 1} / ${total}`;
+    document.getElementById('prev-btn').disabled = current === 0;
+    document.getElementById('next-btn').disabled = current === total - 1;
+
+    // Trigger step-card animation on slide 6
+    if (current === 5) {
+      document.querySelectorAll('.step-card').forEach(c => c.classList.add('visible'));
+    }
+  }
+
+  function go(dir) { goTo(current + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    go(-1);
+  });
+</script>
+</body>
+</html>
