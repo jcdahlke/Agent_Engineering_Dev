@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Microsoft Agent Framework — Advanced Research Multi-Agent System</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    /* ── Variables ──────────────────────────────────────────────────────────── */
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --teal:      #1fb8cd;
+      --teal-dim:  #0f7a8a;
+      --green:     #3fb950;
+      --yellow:    #d29922;
+      --red:       #f85149;
+      --purple:    #a371f7;
+      --blue:      #58a6ff;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --radius:    12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Slide container ────────────────────────────────────────────────────── */
+    #deck {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 48px 64px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      pointer-events: none;
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    .slide.exit-left {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Typography ─────────────────────────────────────────────────────────── */
+    h1 { font-size: 3rem; font-weight: 700; line-height: 1.1; }
+    h2 { font-size: 2rem; font-weight: 700; margin-bottom: 24px; color: var(--teal); }
+    h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 10px; }
+    p  { line-height: 1.7; color: var(--muted); font-size: 1.05rem; }
+    .accent { color: var(--teal); }
+    .subtitle { font-size: 1.3rem; color: var(--muted); margin-top: 16px; }
+    .tag {
+      display: inline-block;
+      background: var(--teal-dim);
+      color: var(--teal);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    /* ── Cards ──────────────────────────────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      gap: 16px;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .card-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+    .card.highlight { border-color: var(--teal); }
+    .card h3 { color: var(--text); }
+    .card p  { font-size: 0.95rem; margin-top: 6px; }
+    .card .icon { font-size: 1.8rem; margin-bottom: 8px; }
+
+    /* ── Agent flow diagram ─────────────────────────────────────────────────── */
+    .mermaid-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ── Tables ─────────────────────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      max-width: 1000px;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    .data-table th {
+      background: var(--teal-dim);
+      color: var(--text);
+      padding: 10px 16px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .data-table td {
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--surface); color: var(--text); }
+    code {
+      background: #1f2937;
+      color: var(--teal);
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.85em;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    pre code {
+      display: block;
+      padding: 16px;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+      border-radius: 8px;
+      background: #0d1117;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* ── Pro/Con lists ──────────────────────────────────────────────────────── */
+    .pro-con-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+    }
+    .pro-list, .con-list { list-style: none; padding: 0; }
+    .pro-list li::before { content: "✓ "; color: var(--green); font-weight: 700; }
+    .con-list li::before { content: "✗ "; color: var(--red); font-weight: 700; }
+    .pro-list li, .con-list li {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.97rem;
+      line-height: 1.5;
+    }
+    .pro-list li:last-child, .con-list li:last-child { border-bottom: none; }
+
+    /* ── Feature chips ──────────────────────────────────────────────────────── */
+    .feature-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      max-width: 1000px;
+    }
+    .feature-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 0.88rem;
+      text-align: center;
+      min-width: 180px;
+    }
+    .feature-chip .chip-title { color: var(--teal); font-weight: 600; font-size: 0.93rem; }
+    .feature-chip .chip-desc  { color: var(--muted); font-size: 0.82rem; margin-top: 4px; }
+
+    /* ── Use case cards ─────────────────────────────────────────────────────── */
+    .use-case {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--teal);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .use-case h3 { color: var(--text); font-size: 1rem; }
+    .use-case p  { font-size: 0.9rem; margin-top: 4px; }
+
+    /* ── Title slide ─────────────────────────────────────────────────────────── */
+    #slide-title { text-align: center; gap: 0; }
+    .title-logo {
+      font-size: 4rem;
+      margin-bottom: 24px;
+    }
+    .byline {
+      margin-top: 32px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    /* ── Agent roles ─────────────────────────────────────────────────────────── */
+    .agent-card {
+      border-left: 4px solid var(--teal);
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+    .agent-card .agent-name { font-weight: 700; font-size: 1rem; color: var(--teal); }
+    .agent-card .agent-model { color: var(--muted); font-size: 0.82rem; margin-bottom: 6px; }
+    .agent-card ul { padding-left: 16px; color: var(--muted); font-size: 0.88rem; }
+    .agent-card ul li { padding: 2px 0; }
+
+    /* ── Navigation ─────────────────────────────────────────────────────────── */
+    #nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 14px 24px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .nav-btn:hover { background: var(--teal-dim); border-color: var(--teal); }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+    #slide-counter { color: var(--muted); font-size: 0.9rem; min-width: 80px; text-align: center; }
+
+    .dot-row { display: flex; gap: 8px; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .dot.active { background: var(--teal); }
+
+    /* ── Slide-specific layout tweaks ───────────────────────────────────────── */
+    .slide-content {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .slide-header {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    /* ── Pattern table ───────────────────────────────────────────────────────── */
+    .pattern-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--teal);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+    .pattern-card.active-pattern { border-left-color: var(--green); border-color: var(--green); }
+    .pattern-card h3 { font-size: 1rem; color: var(--text); margin-bottom: 4px; }
+    .pattern-card p  { font-size: 0.88rem; }
+
+    /* ── Keyboard hint ──────────────────────────────────────────────────────── */
+    .kbd-hint {
+      position: fixed;
+      bottom: 70px;
+      right: 20px;
+      color: var(--border);
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ══════════════════════════ SLIDE 1: TITLE ══════════════════════════════ -->
+  <div class="slide active" id="slide-title">
+    <div class="title-logo">🤖</div>
+    <div class="tag">BYU Agent Engineering</div>
+    <h1>Advanced Research<br><span class="accent">Multi-Agent System</span></h1>
+    <p class="subtitle">Built with <strong style="color:var(--teal)">Microsoft Agent Framework</strong> + OpenAI</p>
+    <p class="byline">5 specialized AI agents · Handoff orchestration · Tool-level HITL<br>
+      Streaming · Middleware · Group Chat · Magentic One patterns</p>
+  </div>
+
+  <!-- ══════════════════════════ SLIDE 2: OVERVIEW ════════════════════════════ -->
+  <div class="slide" id="slide-what">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Overview</div>
+        <h2>What is Microsoft Agent Framework?</h2>
+        <p>A lightweight, extensible Python &amp; .NET framework from Microsoft for building
+          <strong style="color:var(--text)">multi-agent systems</strong> with flexible orchestration patterns —
+          the convergence of <strong style="color:var(--teal)">AutoGen</strong> and
+          <strong style="color:var(--teal)">Semantic Kernel</strong>.</p>
+      </div>
+      <div class="card-grid cols-3" style="max-width:900px">
+        <div class="card highlight">
+          <div class="icon">🔀</div>
+          <h3>5 Built-in Patterns</h3>
+          <p>Sequential, Concurrent, Handoff, Group Chat, and Magentic One — all first-class citizens, no custom wiring.</p>
+        </div>
+        <div class="card highlight">
+          <div class="icon">🔧</div>
+          <h3>Simple API</h3>
+          <p><code>client.as_agent()</code> creates a full agent in one call. No graph nodes, edges, or state reducers to configure.</p>
+        </div>
+        <div class="card highlight">
+          <div class="icon">🛡️</div>
+          <h3>Middleware Pipeline</h3>
+          <p>Pluggable <code>AgentMiddleware</code> for termination, guardrails, logging, and rate limiting — applied per-agent.</p>
+        </div>
+        <div class="card">
+          <div class="icon">👤</div>
+          <h3>Tool-Level HITL</h3>
+          <p><code>approval_mode="always_require"</code> on any tool gates it behind human confirmation. No graph pausing needed.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🌊</div>
+          <h3>Native Streaming</h3>
+          <p>Pass <code>stream=True</code> to any <code>agent.run()</code> call for live token-by-token output across the entire agent loop.</p>
+        </div>
+        <div class="card">
+          <div class="icon">⚡</div>
+          <h3>Async-First</h3>
+          <p>Built on Python asyncio. All agents run concurrently by default — compose patterns with <code>asyncio.gather()</code>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SLIDE 3: ARCHITECTURE ═══════════════════════ -->
+  <div class="slide" id="slide-arch">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Architecture</div>
+        <h2>Handoff Pattern — Hub &amp; Spoke</h2>
+        <p>The Orchestrator sits at the center. Each handoff tool directly <code>await</code>s a specialist
+          and returns its output. <code>MaxIterationsMiddleware</code> prevents runaway loops.</p>
+      </div>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#1fb8cd', 'primaryTextColor': '#e6edf3', 'primaryBorderColor': '#30363d', 'lineColor': '#8b949e', 'secondaryColor': '#161b22', 'tertiaryColor': '#0d1117', 'edgeLabelBackground':'#161b22', 'clusterBkg':'#161b22'}}}%%
+flowchart TD
+    S([START]) --> ORC
+
+    ORC[🎯 Orchestrator<br/>Hub Agent]
+    ORC -.->|call_researcher| RES
+    ORC -.->|call_analyzer| ANA
+    ORC -.->|call_writer| WRI
+    ORC -.->|call_critic| CRI
+    ORC -.->|finish_research| E([END])
+
+    RES[🔍 Researcher<br/>web · arXiv · wiki] -->|result| ORC
+    ANA[📊 Analyzer<br/>extract findings] -->|result| ORC
+    WRI[✍️ Writer<br/>Markdown report] -->|result| ORC
+    CRI{🔍 Critic<br/>score + approve} -->|critique| ORC
+
+    WRI -.->|publish_report<br/>approval_mode=always_require| HITL[👤 Human Approval]
+    HITL -.->|approved| WRI
+
+    MW[⏱ MaxIterationsMiddleware<br/>prevents infinite loops]
+    MW -.-|wraps| ORC
+
+    style ORC  fill:#1a3a4a,stroke:#1fb8cd,color:#e6edf3
+    style RES  fill:#1a2a3a,stroke:#3fb950,color:#e6edf3
+    style ANA  fill:#2a2a1a,stroke:#d29922,color:#e6edf3
+    style WRI  fill:#2a1a3a,stroke:#a371f7,color:#e6edf3
+    style CRI  fill:#3a1a1a,stroke:#f85149,color:#e6edf3
+    style HITL fill:#3a2a1a,stroke:#e36209,color:#e6edf3
+    style MW   fill:#1a1a2a,stroke:#8b949e,color:#8b949e
+    style S    fill:#1fb8cd,stroke:#1fb8cd,color:#0d1117
+    style E    fill:#3fb950,stroke:#3fb950,color:#0d1117
+        </div>
+      </div>
+      <div style="display:flex;gap:24px;font-size:0.82rem;color:var(--muted)">
+        <span>-.-> Handoff tool call</span>
+        <span>→ Result returned to Orchestrator</span>
+        <span>-.- Middleware wraps agent</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SLIDE 4: AGENT ROLES ════════════════════════ -->
+  <div class="slide" id="slide-how">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">How It Works</div>
+        <h2>Agent Roles</h2>
+      </div>
+      <div class="card-grid cols-2" style="max-width:960px">
+        <div class="agent-card">
+          <div class="agent-name">🎯 Orchestrator</div>
+          <div class="agent-model">gpt-4o · temperature 0 · MaxIterationsMiddleware</div>
+          <ul>
+            <li>Hub of the handoff pattern — always retains control</li>
+            <li>Handoff tools <em>directly await</em> each specialist agent</li>
+            <li>Reads shared <code>research_state</code> dict via closure</li>
+            <li>Middleware terminates run after N iterations</li>
+          </ul>
+        </div>
+        <div class="agent-card" style="border-left-color:var(--green)">
+          <div class="agent-name" style="color:var(--green)">🔍 Researcher</div>
+          <div class="agent-model">gpt-4o-mini · internal ReAct loop (framework-managed)</div>
+          <ul>
+            <li>Tavily / DuckDuckGo web search</li>
+            <li>arXiv academic paper search</li>
+            <li>Wikipedia background lookup</li>
+            <li>Full page scraping via BeautifulSoup</li>
+          </ul>
+        </div>
+        <div class="agent-card" style="border-left-color:var(--yellow)">
+          <div class="agent-name" style="color:var(--yellow)">📊 Analyzer</div>
+          <div class="agent-model">gpt-4o · structured output via prompt engineering</div>
+          <ul>
+            <li>Extracts key findings and data points</li>
+            <li>Outputs <code>KEY FINDINGS</code>, <code>CONFIDENCE</code>, <code>GAPS</code></li>
+            <li>Uses <code>extract_key_facts</code> tool for structure</li>
+            <li>Signals if more research coverage is needed</li>
+          </ul>
+        </div>
+        <div class="agent-card" style="border-left-color:var(--purple)">
+          <div class="agent-name" style="color:var(--purple)">✍️ Writer</div>
+          <div class="agent-model">gpt-4o · publish_report HITL gate</div>
+          <ul>
+            <li>Synthesizes findings into structured Markdown report</li>
+            <li>Addresses critique from previous review cycles</li>
+            <li>Calls <code>publish_report</code> — triggers human approval gate</li>
+          </ul>
+        </div>
+      </div>
+      <div class="agent-card" style="border-left-color:var(--red);max-width:960px;width:100%">
+        <div class="agent-name" style="color:var(--red)">🔍 Critic</div>
+        <div class="agent-model">gpt-4o-mini · pure LLM reasoning (no tools)</div>
+        <ul style="columns:2">
+          <li>Scores draft 0.0–1.0 with explicit rubric</li>
+          <li>Outputs <code>SCORE: X.XX</code> and <code>DECISION: APPROVED/REVISION NEEDED</code></li>
+          <li>Orchestrator regex-parses these signals</li>
+          <li>Approves (≥0.7) → Orchestrator calls finish_research</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SLIDE 5: KEY FEATURES ══════════════════════ -->
+  <div class="slide" id="slide-features">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Features</div>
+        <h2>Agent Framework Features Used</h2>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-chip">
+          <div class="chip-title">OpenAIChatClient</div>
+          <div class="chip-desc">Provider client for OpenAI models</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">client.as_agent()</div>
+          <div class="chip-desc">One-call agent construction with tools</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">@tool decorator</div>
+          <div class="chip-desc">Annotated params → LLM-visible descriptions</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">approval_mode="always_require"</div>
+          <div class="chip-desc">Per-tool human approval gate (HITL)</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">AgentMiddleware</div>
+          <div class="chip-desc">Extensible pluggable middleware pipeline</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">MiddlewareTermination</div>
+          <div class="chip-desc">Clean exception-based stop signal</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">AgentContext</div>
+          <div class="chip-desc">Runtime context passed to middleware.process()</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">agent.run(stream=True)</div>
+          <div class="chip-desc">Live token streaming on any agent call</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">Handoff Pattern</div>
+          <div class="chip-desc">Hub-and-spoke via async tool closures</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">Closure-based State</div>
+          <div class="chip-desc">Shared dict captured by tool closures</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">Group Chat</div>
+          <div class="chip-desc">Round-robin or LLM-selected speaker turns</div>
+        </div>
+        <div class="feature-chip">
+          <div class="chip-title">Magentic One</div>
+          <div class="chip-desc">Planner + specialist scratchpad pattern</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SLIDE 6: PATTERNS ══════════════════════════ -->
+  <div class="slide" id="slide-patterns">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Patterns</div>
+        <h2>All 5 Orchestration Patterns</h2>
+        <p>Agent Framework provides five built-in patterns. This demo uses
+          <strong style="color:var(--green)">Handoff</strong> — highlighted below.</p>
+      </div>
+      <div class="card-grid cols-2" style="max-width:960px">
+        <div class="pattern-card">
+          <h3>🔗 Sequential</h3>
+          <p>Agents run in a fixed pipeline A → B → C → D. Best for linear workflows
+            with clear hand-off points. Simplest pattern — minimal configuration.</p>
+        </div>
+        <div class="pattern-card">
+          <h3>⚡ Concurrent</h3>
+          <p>Multiple agents process input in parallel via <code>asyncio.gather()</code>.
+            Best when subtasks are independent and total latency matters more than order.</p>
+        </div>
+        <div class="pattern-card active-pattern">
+          <h3>🔀 Handoff — Used in This Demo</h3>
+          <p>Agents hand control to each other via tool calls. Hub-and-spoke variant:
+            Orchestrator always retains control. Best for dynamic, condition-based routing.</p>
+        </div>
+        <div class="pattern-card">
+          <h3>💬 Group Chat</h3>
+          <p>Agents share a conversation; a moderator picks the next speaker (round-robin
+            or LLM-selected). Best for collaborative brainstorming and multi-perspective analysis.</p>
+        </div>
+        <div class="pattern-card" style="grid-column: span 2">
+          <h3>🧠 Magentic One</h3>
+          <p>A Planner agent coordinates specialists with a shared scratchpad and task ledger.
+            The Planner decomposes tasks, assigns subtasks, and synthesizes results. Best for
+            complex, long-horizon autonomous tasks requiring multi-step planning. Adapted from
+            Microsoft Research's Magentic-One paper (2024).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SLIDE 7: PROS & CONS ═══════════════════════ -->
+  <div class="slide" id="slide-procon">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Evaluation</div>
+        <h2>Pros &amp; Cons of Microsoft Agent Framework</h2>
+      </div>
+      <div class="pro-con-grid">
+        <div>
+          <div class="card" style="margin-bottom:16px;border-color:var(--green)">
+            <h3 style="color:var(--green)">✓ Strengths</h3>
+          </div>
+          <ul class="pro-list">
+            <li><strong>Simple API</strong> — <code>client.as_agent()</code> creates a working agent in one call; far less boilerplate than LangGraph</li>
+            <li><strong>5 built-in patterns</strong> — Sequential, Concurrent, Handoff, Group Chat, Magentic One without custom wiring</li>
+            <li><strong>Native streaming</strong> — <code>stream=True</code> on any <code>agent.run()</code> call, including through tool loops</li>
+            <li><strong>Extensible middleware</strong> — any Python class implementing <code>AgentMiddleware</code> plugs in instantly</li>
+            <li><strong>Tool-level HITL</strong> — granular, per-tool approval gates; no graph-level pause/resume complexity</li>
+            <li><strong>Async-first</strong> — built on asyncio; concurrent patterns compose naturally</li>
+            <li><strong>Multi-provider</strong> — OpenAI, Azure OpenAI, Anthropic, Ollama, and more via provider packages</li>
+            <li><strong>Lightweight</strong> — fewer abstractions than LangGraph/CrewAI; the framework stays out of your way</li>
+          </ul>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:16px;border-color:var(--red)">
+            <h3 style="color:var(--red)">✗ Limitations</h3>
+          </div>
+          <ul class="con-list">
+            <li><strong>Early-stage</strong> — v1.0 released 2026; API may change; fewer community examples than LangGraph/CrewAI</li>
+            <li><strong>No built-in persistence</strong> — unlike LangGraph's <code>MemorySaver</code>, state is lost if the process exits</li>
+            <li><strong>No time-travel debugging</strong> — can't inspect or rewind to previous checkpoints</li>
+            <li><strong>No visualization</strong> — no built-in Mermaid or ASCII graph generation</li>
+            <li><strong>Manual state management</strong> — plain dict instead of LangGraph's TypedDict with automatic reducers</li>
+            <li><strong>Less opinionated</strong> — more design decisions land on the developer; patterns aren't enforced</li>
+            <li><strong>Less observability</strong> — no native equivalent of LangSmith tracing yet</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SLIDE 8: USE CASES ═════════════════════════ -->
+  <div class="slide" id="slide-uses">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Use Cases</div>
+        <h2>When to Use Agent Framework</h2>
+        <p>Agent Framework shines when you need <strong style="color:var(--text)">flexibility, simplicity, and multiple orchestration patterns</strong> without heavy framework overhead.</p>
+      </div>
+      <div class="card-grid cols-2" style="max-width:1000px">
+        <div class="use-case">
+          <h3>🔬 Research Pipelines</h3>
+          <p>Dynamic routing between specialists maps naturally to the Handoff pattern.
+            Call researcher → analyzer → writer → critic without a full state machine.</p>
+        </div>
+        <div class="use-case">
+          <h3>💬 Conversational Agents</h3>
+          <p>Group Chat pattern for multi-agent debates, customer service routing,
+            or collaborative brainstorming with natural speaker-selection logic.</p>
+        </div>
+        <div class="use-case">
+          <h3>🧠 Autonomous Planning</h3>
+          <p>Magentic One for complex long-horizon tasks requiring a planner that
+            decomposes work, delegates to specialists, and synthesizes results.</p>
+        </div>
+        <div class="use-case">
+          <h3>⚡ Parallel Processing</h3>
+          <p>Concurrent pattern for independent subtasks — research multiple topics
+            simultaneously, then merge results in a final synthesis agent.</p>
+        </div>
+        <div class="use-case">
+          <h3>🛡️ Production Guardrails</h3>
+          <p>Middleware pipeline for rate limiting, content moderation, PII detection,
+            and safety filters — plugged in per-agent without changing agent logic.</p>
+        </div>
+        <div class="use-case">
+          <h3>🎓 Teaching Agent Concepts</h3>
+          <p>Simple API makes orchestration patterns <em>visible</em> without boilerplate.
+            Students understand the handoff concept in minutes, not hours.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SLIDE 9: COMPARISON ════════════════════════ -->
+  <div class="slide" id="slide-compare">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Comparison</div>
+        <h2>Framework Comparison</h2>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>LangGraph</th>
+            <th>CrewAI</th>
+            <th style="color:var(--teal)">Agent Framework</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color:var(--text)">State management</strong></td>
+            <td><code>TypedDict</code> + annotated reducers</td>
+            <td>Pydantic <code>FlowState</code></td>
+            <td>Plain dict (manual)</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--text)">Orchestration</strong></td>
+            <td><code>StateGraph</code> with edges</td>
+            <td>Process.hierarchical</td>
+            <td>5 patterns (Handoff, Group Chat…)</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--text)">HITL</strong></td>
+            <td><code>interrupt()</code> mid-node</td>
+            <td>Limited built-in support</td>
+            <td><code>approval_mode</code> per tool</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--text)">Streaming</strong></td>
+            <td>Multiple modes (<code>updates</code>, <code>custom</code>)</td>
+            <td>Limited</td>
+            <td>Native <code>stream=True</code></td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--text)">Persistence</strong></td>
+            <td><code>MemorySaver</code> / <code>SqliteSaver</code></td>
+            <td><code>memory=True</code> (SQLite)</td>
+            <td>None built-in</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--text)">Visualization</strong></td>
+            <td>Mermaid + ASCII (built-in)</td>
+            <td>Partial</td>
+            <td>None built-in</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--text)">Learning curve</strong></td>
+            <td>Steep (graphs, reducers)</td>
+            <td>Moderate</td>
+            <td>Low</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--text)">Boilerplate</strong></td>
+            <td>High</td>
+            <td>Medium</td>
+            <td>Low</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.85rem;text-align:center;margin-top:8px">
+        <strong style="color:var(--teal)">Choose Agent Framework</strong> for fast iteration, simple patterns, and minimal setup. &nbsp;
+        <strong style="color:var(--muted)">Choose LangGraph</strong> for persistence, HITL, and fine control.
+      </p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SLIDE 10: GETTING STARTED ══════════════════ -->
+  <div class="slide" id="slide-start">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Getting Started</div>
+        <h2>Quick Start</h2>
+      </div>
+      <div class="card-grid cols-2" style="max-width:1000px">
+        <div class="card">
+          <h3 style="margin-bottom:12px">Install &amp; Run</h3>
+          <pre><code># Install dependencies
+pip install agent-framework \
+            agent-framework-openai
+
+# Configure API key
+cp .env.example .env
+# → set OPENAI_API_KEY in .env
+
+# Run the research system
+python runner.py \
+  --topic "quantum computing" \
+  --mode basic
+
+# Streaming mode
+python runner.py \
+  --topic "AI in healthcare" \
+  --mode stream --depth deep
+
+# Human-in-the-loop mode
+python runner.py \
+  --topic "climate change" \
+  --mode hitl</code></pre>
+        </div>
+        <div class="card">
+          <h3 style="margin-bottom:12px">Minimal Agent + Tool</h3>
+          <pre><code>from agent_framework.openai import (
+    OpenAIChatClient
+)
+from agent_framework import tool
+from typing import Annotated
+
+@tool
+def web_search(
+    q: Annotated[str, "search query"]
+) -> str:
+    return "search results..."
+
+@tool(approval_mode="always_require")
+def publish(
+    text: Annotated[str, "report text"]
+) -> str:
+    """Requires human approval."""
+    return "Published!"
+
+client = OpenAIChatClient(
+    model="gpt-4o-mini",
+    api_key="sk-..."
+)
+agent = client.as_agent(
+    name="Researcher",
+    instructions="You are a specialist.",
+    tools=[web_search, publish],
+)
+
+# Non-streaming
+result = await agent.run("Research AI")
+
+# Streaming
+async for chunk in agent.run(
+    "Research AI", stream=True
+):
+    if chunk.text:
+        print(chunk.text, end="")</code></pre>
+        </div>
+      </div>
+      <p style="font-size:0.9rem;text-align:center">
+        Docs: <code>learn.microsoft.com/en-us/agent-framework</code> &nbsp;·&nbsp;
+        GitHub: <code>github.com/microsoft/agent-framework</code>
+      </p>
+    </div>
+  </div>
+
+</div><!-- #deck -->
+
+<!-- Navigation -->
+<div id="nav">
+  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>← Prev</button>
+  <div class="dot-row" id="dots"></div>
+  <span id="slide-counter">1 / 10</span>
+  <button class="nav-btn" id="btn-next" onclick="navigate(1)">Next →</button>
+</div>
+
+<div class="kbd-hint">← → arrow keys to navigate</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      background: '#0d1117',
+      primaryColor: '#1fb8cd',
+      edgeLabelBackground: '#161b22',
+    },
+  });
+
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsContainer = document.getElementById('dots');
+  let current = 0;
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  });
+
+  function updateNav() {
+    document.getElementById('btn-prev').disabled = current === 0;
+    document.getElementById('btn-next').disabled = current === slides.length - 1;
+    document.getElementById('slide-counter').textContent = `${current + 1} / ${slides.length}`;
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+  }
+
+  function goTo(index) {
+    if (index === current) return;
+    const isForward = index > current;
+    slides.forEach(slide => { slide.classList.remove('active', 'exit-left'); });
+    if (isForward) { slides[current].classList.add('exit-left'); }
+    current = index;
+    slides[current].classList.add('active');
+    updateNav();
+  }
+
+  function navigate(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < slides.length) goTo(next);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  });
+
+  updateNav();
+</script>
+</body>
+</html>
