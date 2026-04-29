@@ -14,7 +14,8 @@
       "Bash(py --list)",
       "WebSearch",
       "Bash(pip index *)",
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(grep -E \"\\\\.\\(md|txt\\)$\")"
     ]
   }
 }

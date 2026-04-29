@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LlamaIndex — Advanced Research Multi-Agent System</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    /* ── Variables ──────────────────────────────────────────────────────────── */
+    :root {
+      --bg:          #0d1117;
+      --surface:     #161b22;
+      --border:      #30363d;
+      --amber:       #f59e0b;
+      --amber-dim:   #92400e;
+      --amber-glow:  #d97706;
+      --green:       #3fb950;
+      --red:         #f85149;
+      --blue:        #58a6ff;
+      --purple:      #a371f7;
+      --teal:        #1fb8cd;
+      --text:        #e6edf3;
+      --muted:       #8b949e;
+      --radius:      10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Deck & slides ──────────────────────────────────────────────────────── */
+    #deck {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 60px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      pointer-events: none;
+      overflow-y: auto;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+    .slide.exit-left {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Typography ─────────────────────────────────────────────────────────── */
+    h1 { font-size: 2.6rem; font-weight: 700; line-height: 1.15; text-align: center; }
+    h2 { font-size: 1.75rem; font-weight: 600; color: var(--amber); margin-bottom: 28px; text-align: center; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+    p  { line-height: 1.6; color: var(--muted); }
+
+    .accent   { color: var(--amber); }
+    .subtitle { font-size: 1.15rem; color: var(--muted); text-align: center; margin-top: 12px; }
+    .byline   { font-size: 0.9rem;  color: var(--muted); text-align: center; margin-top: 8px; }
+
+    /* ── Title logo ─────────────────────────────────────────────────────────── */
+    .title-logo {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 0 20px var(--amber));
+    }
+
+    /* ── Tag / badge ────────────────────────────────────────────────────────── */
+    .tag {
+      display: inline-block;
+      background: var(--amber-dim);
+      color: var(--amber);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Cards ──────────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+    .card h3 { color: var(--amber); }
+    .card p  { font-size: 0.9rem; margin-top: 6px; }
+
+    .card-grid {
+      display: grid;
+      gap: 16px;
+      width: 100%;
+    }
+    .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+    /* ── Feature chips ──────────────────────────────────────────────────────── */
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .chip {
+      background: var(--surface);
+      border: 1px solid var(--amber-dim);
+      color: var(--amber);
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+
+    /* ── Agent cards ────────────────────────────────────────────────────────── */
+    .agent-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+    .agent-card .agent-name {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--amber);
+      margin-bottom: 4px;
+    }
+    .agent-card .agent-model {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .agent-card p { font-size: 0.85rem; }
+    .agent-card .tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .agent-card .tool-tag {
+      background: #1c2a1e;
+      border: 1px solid #238636;
+      color: var(--green);
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* ── Pro / con lists ────────────────────────────────────────────────────── */
+    .pro-con-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      width: 100%;
+    }
+    .pro-list, .con-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .pro-list li, .con-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .pro-list li::before { content: "✓"; color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .con-list li::before { content: "✗"; color: var(--red);   font-weight: 700; flex-shrink: 0; }
+
+    /* ── Use-case cards ─────────────────────────────────────────────────────── */
+    .use-case {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--amber);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 0.88rem;
+    }
+    .use-case .uc-title { font-weight: 600; color: var(--amber); margin-bottom: 4px; }
+    .use-case p { font-size: 0.82rem; }
+
+    /* ── Mermaid wrapper ────────────────────────────────────────────────────── */
+    .mermaid-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ── Comparison table ───────────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    .data-table th {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+      color: var(--amber);
+      font-weight: 600;
+    }
+    .data-table td {
+      border: 1px solid var(--border);
+      padding: 7px 12px;
+      vertical-align: top;
+    }
+    .data-table tr:nth-child(even) td { background: #0f1318; }
+    .data-table tr:hover td { background: #1c2128; }
+    .data-table td:first-child { color: var(--muted); font-weight: 500; width: 14%; }
+
+    /* ── Code block ─────────────────────────────────────────────────────────── */
+    .code-block {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      font-family: "Fira Code", "Cascadia Code", Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      width: 100%;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .kw  { color: #ff7b72; }  /* keyword */
+    .fn  { color: #d2a8ff; }  /* function / class name */
+    .str { color: #a5d6ff; }  /* string */
+    .cm  { color: #8b949e; }  /* comment */
+    .nb  { color: #ffa657; }  /* number / decorator */
+    .cls { color: #79c0ff; }  /* class / type */
+
+    /* ── Runner modes ───────────────────────────────────────────────────────── */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      width: 100%;
+    }
+    .mode-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--amber);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+    .mode-card .mode-name { font-weight: 700; color: var(--amber); font-size: 1rem; margin-bottom: 6px; }
+    .mode-card .mode-cmd {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+    .mode-card p { font-size: 0.82rem; }
+
+    /* ── Event flow diagram (CSS) ───────────────────────────────────────────── */
+    .event-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      width: 100%;
+      max-width: 700px;
+    }
+    .ef-step {
+      background: var(--surface);
+      border: 1px solid var(--amber-dim);
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 0.85rem;
+      text-align: center;
+      width: 100%;
+    }
+    .ef-step .ef-name { font-weight: 600; color: var(--amber); }
+    .ef-step .ef-detail { color: var(--muted); font-size: 0.78rem; margin-top: 2px; }
+    .ef-arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      margin: 2px 0;
+    }
+    .ef-event-tag {
+      background: #1c2128;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--blue);
+      font-size: 0.72rem;
+      font-family: monospace;
+      padding: 2px 10px;
+      margin: 2px 0;
+    }
+    .ef-connector { color: var(--border); font-size: 1.1rem; line-height: 1; }
+
+    /* ── Navigation ─────────────────────────────────────────────────────────── */
+    #nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .nav-btn:hover:not(:disabled) { background: var(--border); border-color: var(--amber); }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .dot-row { display: flex; gap: 8px; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .dot.active { background: var(--amber); }
+    #slide-counter { font-size: 0.8rem; color: var(--muted); min-width: 48px; text-align: center; }
+  </style>
+</head>
+<body>
+<div id="deck">
+
+  <!-- ── Slide 1: Title ──────────────────────────────────────────────────── -->
+  <div class="slide active" id="slide-title">
+    <div class="title-logo">🦙</div>
+    <div class="tag">BYU Agent Engineering — Framework Series</div>
+    <h1>Advanced Research<br><span class="accent">Multi-Agent System</span></h1>
+    <p class="subtitle">Built with <strong>LlamaIndex</strong> + OpenAI</p>
+    <p class="byline">Event-driven Workflow &nbsp;·&nbsp; VectorStoreIndex &nbsp;·&nbsp; SubQuestionQueryEngine &nbsp;·&nbsp; RouterQueryEngine &nbsp;·&nbsp; LlamaDebugHandler</p>
+    <div class="chip-row">
+      <span class="chip">Workflow + Events</span>
+      <span class="chip">FunctionCallingAgent</span>
+      <span class="chip">RAG Pipeline</span>
+      <span class="chip">Structured Output</span>
+      <span class="chip">LlamaDebugHandler</span>
+    </div>
+  </div>
+
+  <!-- ── Slide 2: What is LlamaIndex? ────────────────────────────────────── -->
+  <div class="slide" id="slide-what">
+    <h2>What is LlamaIndex?</h2>
+    <div class="card-grid cols-3" style="max-width:900px">
+      <div class="card">
+        <h3>🗂️ RAG-First Architecture</h3>
+        <p>Built around Retrieval-Augmented Generation as a first-class primitive. <code>VectorStoreIndex</code>, <code>SummaryIndex</code>, <code>SubQuestionQueryEngine</code>, and <code>RouterQueryEngine</code> are built-in — not bolted on from a separate library.</p>
+      </div>
+      <div class="card">
+        <h3>⚡ Event-Driven Workflow</h3>
+        <p>The <code>Workflow</code> class routes execution via Python type annotations on <code>@step</code> parameters. No explicit routing tables, no string-keyed edges — the type system IS the router.</p>
+      </div>
+      <div class="card">
+        <h3>🧩 Modular Ecosystem</h3>
+        <p>Over 160 integrations as independent pip packages (<code>llama-index-llms-openai</code>, <code>llama-index-agent-openai</code>, etc.). Install only what you need — no monolithic dependency.</p>
+      </div>
+      <div class="card">
+        <h3>🔍 Native Observability</h3>
+        <p><code>LlamaDebugHandler</code> intercepts every LLM call, embedding, and retrieval event. Provides token counts and latency traces with zero extra code — no external tracing library needed.</p>
+      </div>
+      <div class="card">
+        <h3>🤖 Multiple Agent Patterns</h3>
+        <p><code>OpenAIAgent</code> (function-calling), <code>ReActAgent</code> (text-based ReAct), and <code>AgentWorkflow</code> (orchestration). Each works with any <code>QueryEngineTool</code> or <code>FunctionTool</code>.</p>
+      </div>
+      <div class="card">
+        <h3>💬 Memory Management</h3>
+        <p><code>ChatMemoryBuffer</code> provides token-limited conversation history. Works across async steps via the workflow <code>Context</code> store — no external vector DB needed for short sessions.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Slide 3: System Architecture ────────────────────────────────────── -->
+  <div class="slide" id="slide-arch">
+    <h2>System Architecture</h2>
+    <div class="mermaid-wrap">
+      <div class="mermaid">
+flowchart TD
+    Start(["▶ StartEvent\ntopic · depth"]) --> Orch
+
+    subgraph WF ["ResearchWorkflow — LlamaIndex Workflow"]
+        direction TB
+        Orch["🧠 Orchestrator\ngpt-4o-mini\nDecomposes topic → sub-questions"]
+        WebR["🌐 Web Researcher\nOpenAIAgent + FunctionTools\nDDG · Wikipedia · Scrape"]
+        RAG["📚 RAG Analyst\nVectorStoreIndex\nSubQuestionQueryEngine\ntext-embedding-3-small"]
+        Synth["🔀 Synthesizer\nRouterQueryEngine\nVectorIndex ↔ SummaryIndex\nLLMSingleSelector"]
+        Writer["✍️ Report Writer\ngpt-4o structured output\nas_structured_llm(ResearchReport)"]
+    end
+
+    Orch -- "PlanReadyEvent\n(sub_questions)" --> WebR
+    WebR -- "WebResearchDoneEvent\n(raw_chunks · sources)" --> RAG
+    RAG  -- "RagAnalysisDoneEvent\n(SubAnswers)" --> Synth
+    Synth -- "SynthesisDoneEvent\n(merged_findings)" --> Writer
+    Writer --> Stop(["⏹ StopEvent\nResearchReport"])
+
+    Debug["🔍 LlamaDebugHandler\nTraces every LLM call\nToken counts · Latency"]
+    Mem["💬 ChatMemoryBuffer\nShared across all steps\nvia ctx.set / ctx.get"]
+
+    WF -. "callback_manager" .-> Debug
+    WF -. "context store" .-> Mem
+
+    style WF fill:#161b22,stroke:#f59e0b,color:#e6edf3
+    style Orch fill:#0f3a40,stroke:#f59e0b,color:#e6edf3
+    style WebR fill:#0f3a40,stroke:#f59e0b,color:#e6edf3
+    style RAG  fill:#1a3a2a,stroke:#3fb950,color:#e6edf3
+    style Synth fill:#2a1a3a,stroke:#a371f7,color:#e6edf3
+    style Writer fill:#3a2a1a,stroke:#ffa657,color:#e6edf3
+    style Debug fill:#161b22,stroke:#30363d,color:#8b949e
+    style Mem   fill:#161b22,stroke:#30363d,color:#8b949e
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Slide 4: Workflow Event System ──────────────────────────────────── -->
+  <div class="slide" id="slide-events">
+    <h2>The Workflow Event System</h2>
+    <div style="display:flex;gap:32px;width:100%;max-width:1000px;align-items:flex-start">
+      <div style="flex:1">
+        <div class="event-flow">
+          <div class="ef-step">
+            <div class="ef-name">▶ StartEvent</div>
+            <div class="ef-detail">topic, depth</div>
+          </div>
+          <div class="ef-arrow">
+            <div class="ef-connector">↓</div>
+            <div class="ef-event-tag">PlanReadyEvent(sub_questions)</div>
+            <div class="ef-connector">↓</div>
+          </div>
+          <div class="ef-step">
+            <div class="ef-name">🌐 web_research_step</div>
+            <div class="ef-detail">consumes: PlanReadyEvent</div>
+          </div>
+          <div class="ef-arrow">
+            <div class="ef-connector">↓</div>
+            <div class="ef-event-tag">WebResearchDoneEvent(raw_chunks)</div>
+            <div class="ef-connector">↓</div>
+          </div>
+          <div class="ef-step">
+            <div class="ef-name">📚 rag_analysis_step</div>
+            <div class="ef-detail">consumes: WebResearchDoneEvent</div>
+          </div>
+          <div class="ef-arrow">
+            <div class="ef-connector">↓</div>
+            <div class="ef-event-tag">RagAnalysisDoneEvent(answers)</div>
+            <div class="ef-connector">↓</div>
+          </div>
+          <div class="ef-step">
+            <div class="ef-name">🔀 synthesizer_step</div>
+            <div class="ef-detail">consumes: RagAnalysisDoneEvent</div>
+          </div>
+          <div class="ef-arrow">
+            <div class="ef-connector">↓</div>
+            <div class="ef-event-tag">SynthesisDoneEvent(findings)</div>
+            <div class="ef-connector">↓</div>
+          </div>
+          <div class="ef-step">
+            <div class="ef-name">⏹ StopEvent → ResearchReport</div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="border-left:3px solid var(--amber)">
+          <h3>Type-Based Dispatch</h3>
+          <p>Steps declare what event they consume via their parameter type annotation. The Workflow engine dispatches automatically — no routing table, no string keys.</p>
+        </div>
+        <div class="code-block"><span class="nb">@step</span>
+<span class="kw">async def</span> <span class="fn">rag_analysis_step</span>(
+    self, ctx: <span class="cls">Context</span>,
+    ev: <span class="cls">WebResearchDoneEvent</span>  <span class="cm"># ← type IS the route</span>
+) -> <span class="cls">RagAnalysisDoneEvent</span>:
+    ...</div>
+        <div class="card" style="border-left:3px solid var(--blue)">
+          <h3>ProgressEvent Streaming</h3>
+          <p><code>ctx.write_event_to_stream(ProgressEvent(...))</code> surfaces live updates in <strong>stream mode</strong> — similar to LangGraph's <code>StreamWriter</code> but typed.</p>
+        </div>
+        <div class="card" style="border-left:3px solid var(--purple)">
+          <h3>Context Store</h3>
+          <p><code>await ctx.set("key", value)</code> / <code>await ctx.get("key")</code> — a shared async key-value store accessible to all steps in the workflow.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Slide 5: RAG Pipeline ─────────────────────────────────────────────── -->
+  <div class="slide" id="slide-rag">
+    <h2>The RAG Pipeline</h2>
+    <div style="display:flex;gap:24px;width:100%;max-width:1050px;align-items:flex-start">
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="border-left:3px solid var(--green)">
+          <h3>📄 VectorStoreIndex</h3>
+          <p>Builds an in-memory vector index from web-gathered text using <code>text-embedding-3-small</code>. Uses LlamaIndex's <strong>SimpleVectorStore</strong> — no C++ FAISS build required. Swap to FAISS, Pinecone, or Chroma with one import change.</p>
+        </div>
+        <div class="card" style="border-left:3px solid var(--amber)">
+          <h3>🧩 QueryEngineTool</h3>
+          <p>Wraps any query engine as a tool that agents or composite engines can call. The bridge between indexes and agents — unique to LlamaIndex.</p>
+          <div class="code-block" style="font-size:0.72rem;margin-top:8px"><span class="fn">QueryEngineTool</span>.from_defaults(
+    query_engine=index.as_query_engine(),
+    name=<span class="str">"research_knowledge_base"</span>,
+    description=<span class="str">"Contains research about..."</span>,
+)</div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--blue)">
+          <h3>🔢 SubQuestionQueryEngine</h3>
+          <p>LlamaIndex's signature feature. Given a complex query, it <strong>automatically</strong> decomposes it into sub-questions, queries the vector index for each, then synthesizes a unified answer. No equivalent in LangGraph or CrewAI.</p>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+        <div class="card" style="border-left:3px solid var(--purple)">
+          <h3>🔀 RouterQueryEngine</h3>
+          <p>Routes each incoming query to the best of multiple query engines using <code>LLMSingleSelector</code>. The LLM reads each engine's <em>description</em> and selects the best match. In our system: vector (precise retrieval) vs. summary (broad synthesis).</p>
+          <div class="code-block" style="font-size:0.72rem;margin-top:8px"><span class="fn">RouterQueryEngine</span>(
+    selector=<span class="fn">LLMSingleSelector</span>.from_defaults(),
+    query_engine_tools=[vector_tool, summary_tool],
+)</div>
+        </div>
+        <div class="card" style="border-left:3px solid var(--teal)">
+          <h3>📋 SummaryIndex</h3>
+          <p>A sequential index optimized for summarization — traverses all nodes to produce a full-document answer. Paired with <code>VectorStoreIndex</code> in the <code>RouterQueryEngine</code> for complementary strengths.</p>
+        </div>
+        <div class="card" style="border-left:3px solid var(--green)">
+          <h3>🏗️ Structured Output</h3>
+          <p><code>llm.as_structured_llm(ResearchReport)</code> binds a Pydantic model to an LLM — every response is automatically parsed and validated. Same concept as LangChain's <code>with_structured_output</code>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Slide 6: Agent Roles ──────────────────────────────────────────────── -->
+  <div class="slide" id="slide-agents">
+    <h2>Agent Roles</h2>
+    <div class="card-grid cols-2" style="max-width:900px">
+      <div class="agent-card">
+        <div class="agent-name">🧠 Orchestrator</div>
+        <div class="agent-model">gpt-4o-mini · temperature=0 · no tools</div>
+        <p>Decomposes the research topic into 3–5 focused sub-questions. Uses <code>llm.acomplete()</code> directly — pure LLM reasoning, no tools needed. Sets the agenda for all downstream steps.</p>
+      </div>
+      <div class="agent-card">
+        <div class="agent-name">🌐 Web Researcher</div>
+        <div class="agent-model">gpt-4o-mini · FunctionAgent</div>
+        <p>Runs one <code>FunctionCallingAgent</code> call per sub-question. Collects raw text chunks for indexing. Demonstrates <code>FunctionTool.from_defaults</code> wrapping plain Python functions.</p>
+        <div class="tools">
+          <span class="tool-tag">duckduckgo_search</span>
+          <span class="tool-tag">wikipedia_search</span>
+          <span class="tool-tag">scrape_webpage</span>
+        </div>
+      </div>
+      <div class="agent-card" style="border-left-color:var(--green)">
+        <div class="agent-name" style="color:var(--green)">📚 RAG Analyst</div>
+        <div class="agent-model">gpt-4o · text-embedding-3-small · SubQuestionQueryEngine</div>
+        <p>Builds <code>VectorStoreIndex</code> from web chunks, wraps it as <code>QueryEngineTool</code>, and runs <code>SubQuestionQueryEngine</code> to answer each planned sub-question with evidence-backed responses.</p>
+      </div>
+      <div class="agent-card" style="border-left-color:var(--purple)">
+        <div class="agent-name" style="color:var(--purple)">🔀 Synthesizer</div>
+        <div class="agent-model">gpt-4o · RouterQueryEngine · LLMSingleSelector</div>
+        <p>Creates both a <code>VectorStoreIndex</code> and <code>SummaryIndex</code>, then uses <code>RouterQueryEngine</code> to intelligently route 4 thematic synthesis queries to the best-fit engine.</p>
+      </div>
+      <div class="agent-card" style="border-left-color:var(--teal);grid-column:1/-1">
+        <div class="agent-name" style="color:var(--teal)">✍️ Report Writer</div>
+        <div class="agent-model">gpt-4o · temperature=0.7 · as_structured_llm(ResearchReport)</div>
+        <p>Reads the full <code>ChatMemoryBuffer</code> history, then uses <code>llm.as_structured_llm(ResearchReport)</code> to generate a validated Pydantic report with title, executive summary, sections, conclusion, citations, quality score, and word count estimate.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Slide 7: Runner Modes ─────────────────────────────────────────────── -->
+  <div class="slide" id="slide-runner">
+    <h2>Runner Modes</h2>
+    <div class="mode-grid" style="max-width:900px">
+      <div class="mode-card">
+        <div class="mode-name">⚡ basic</div>
+        <div class="mode-cmd">python runner.py --topic "..." --mode basic</div>
+        <p>Runs the full workflow to completion and renders the final <code>ResearchReport</code> with <strong>rich</strong> Markdown panels. Uses <code>asyncio.run(workflow.run(...))</code> — the simplest API. Best for production use.</p>
+      </div>
+      <div class="mode-card">
+        <div class="mode-name">📡 stream</div>
+        <div class="mode-cmd">python runner.py --topic "..." --mode stream --depth deep</div>
+        <p>Iterates <code>async for event in handler.stream_events()</code>. Each <code>ProgressEvent</code> emitted by <code>ctx.write_event_to_stream()</code> inside any step appears live as the workflow runs. Shows step-by-step progress.</p>
+      </div>
+      <div class="mode-card">
+        <div class="mode-name">🔍 debug</div>
+        <div class="mode-cmd">python runner.py --topic "..." --mode debug</div>
+        <p>Enables <code>LlamaDebugHandler(print_trace_on_end=True)</code>. After the run, calls <code>debug_handler.get_event_pairs(CBEventType.LLM)</code> and renders a table of every LLM call with model, token counts, and prompt preview.</p>
+      </div>
+    </div>
+    <div style="width:100%;max-width:900px;margin-top:20px">
+      <div class="code-block"><span class="cm"># Stream mode — live step-by-step output</span>
+handler = workflow.run(topic=topic, depth=depth)
+
+<span class="kw">async for</span> event <span class="kw">in</span> handler.<span class="fn">stream_events</span>():
+    <span class="kw">if</span> <span class="fn">isinstance</span>(event, <span class="cls">ProgressEvent</span>):
+        print(<span class="str">f"  {event.step}: {event.message}"</span>)
+
+report = <span class="kw">await</span> handler  <span class="cm"># final result after stream ends</span></div>
+    </div>
+  </div>
+
+  <!-- ── Slide 8: Pros & Cons ──────────────────────────────────────────────── -->
+  <div class="slide" id="slide-proscons">
+    <h2>Pros &amp; Cons</h2>
+    <div class="pro-con-grid" style="max-width:900px">
+      <div>
+        <h3 style="color:var(--green);margin-bottom:12px">Strengths</h3>
+        <ul class="pro-list">
+          <li>Best-in-class RAG primitives (VectorStoreIndex, SubQuestionQueryEngine, RouterQueryEngine) built into the framework</li>
+          <li>160+ pre-built integrations for LLMs, vector stores, document loaders, and data connectors</li>
+          <li>Event-driven Workflow avoids boilerplate routing tables — type annotations ARE the router</li>
+          <li>LlamaDebugHandler provides deep, token-level observability with no extra tooling</li>
+          <li>Fully async with native <code>aquery()</code>, <code>achat()</code>, <code>astream()</code> APIs</li>
+          <li>Structured output (<code>as_structured_llm</code>) works with any Pydantic model</li>
+          <li>Modular pip packages — install only what you need, no monolithic dependency</li>
+          <li>Works with any vector store backend (SimpleVector, FAISS, Pinecone, Chroma, Weaviate)</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color:var(--red);margin-bottom:12px">Limitations</h3>
+        <ul class="con-list">
+          <li>Global <code>Settings</code> object can cause issues in multi-threaded or multi-tenant scenarios</li>
+          <li>No built-in human-in-the-loop (HITL) mechanism — requires custom interrupt logic</li>
+          <li>SubQuestionQueryEngine can be expensive (5+ LLM calls per complex query)</li>
+          <li>Workflow has no native checkpointing or session resumption (unlike LangGraph's MemorySaver)</li>
+          <li>No built-in hierarchical team management like CrewAI's manager agent pattern</li>
+          <li>Documentation can lag behind rapid package releases across 160+ integrations</li>
+          <li>Rapid API changes between minor versions can break integrations</li>
+          <li>Memory management is basic (ChatMemoryBuffer) vs. LangGraph's multi-store system</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Slide 9: Framework Comparison ────────────────────────────────────── -->
+  <div class="slide" id="slide-compare">
+    <h2>Framework Comparison</h2>
+    <div style="width:100%;max-width:1050px;overflow-x:auto">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th style="color:#1fb8cd">LangGraph</th>
+            <th style="color:#8b5cf6">CrewAI</th>
+            <th style="color:#f59e0b">LlamaIndex</th>
+            <th style="color:#58a6ff">Microsoft AF</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Orchestration</td>
+            <td>Explicit StateGraph with conditional edges</td>
+            <td>Role-based agents with hierarchical manager</td>
+            <td>Event-driven Workflow with typed Events</td>
+            <td>Handoff Mesh — hub-and-spoke via async closures</td>
+          </tr>
+          <tr>
+            <td>Routing</td>
+            <td>Routing functions + <code>add_conditional_edges()</code></td>
+            <td><code>Process.hierarchical</code> auto-manager LLM delegates; <code>@router</code> for Flow branching</td>
+            <td>Python type annotations on <code>@step</code> params</td>
+            <td>Orchestrator LLM chooses which handoff tool to call next</td>
+          </tr>
+          <tr>
+            <td>State</td>
+            <td>TypedDict with Annotated reducers</td>
+            <td>FlowState Pydantic model + task context passing</td>
+            <td>Context key-value store + typed Event payloads</td>
+            <td>Plain mutable dict passed by reference to closures</td>
+          </tr>
+          <tr>
+            <td>RAG Support</td>
+            <td>External (LangChain retrievers)</td>
+            <td>External (<code>crewai-tools</code>)</td>
+            <td>First-class: VectorStoreIndex, SubQuestion, Router</td>
+            <td>None built-in</td>
+          </tr>
+          <tr>
+            <td>Observability</td>
+            <td><code>app.stream(stream_mode="updates"/"custom")</code>; graph visualization via <code>draw_mermaid_png()</code></td>
+            <td><code>step_callback</code> per ReAct step; <code>verbose</code> mode; <code>output_log_file</code></td>
+            <td>LlamaDebugHandler — token-level LLM tracing; <code>ProgressEvent</code> streaming</td>
+            <td><code>stream=True</code> yields token chunks; no built-in tracing framework</td>
+          </tr>
+          <tr>
+            <td>Memory</td>
+            <td>MemorySaver (checkpoints) + InMemoryStore</td>
+            <td>Short/long-term/entity memory (SQLite + embeddings)</td>
+            <td>ChatMemoryBuffer (token-limited conversation)</td>
+            <td>Manual mutable dict; no built-in persistence</td>
+          </tr>
+          <tr>
+            <td>HITL</td>
+            <td>Built-in <code>interrupt()</code> + <code>Command(resume=...)</code></td>
+            <td>Not built-in (Flow-level pause only)</td>
+            <td>Not built-in</td>
+            <td>Built-in — <code>@tool(approval_mode="always_require")</code> per-tool approval gate</td>
+          </tr>
+          <tr>
+            <td>Best For</td>
+            <td>Complex control flow, HITL, cycles, checkpointing</td>
+            <td>Team-based delegation, self-managing agent crews</td>
+            <td>RAG pipelines, document-heavy research, knowledge bases</td>
+            <td>Minimal-boilerplate orchestration, per-tool approval gates, async-first apps</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="chip-row" style="margin-top:16px">
+      <span class="chip" style="border-color:#1fb8cd;color:#1fb8cd">LangGraph → Control flow</span>
+      <span class="chip" style="border-color:#8b5cf6;color:#8b5cf6">CrewAI → Team delegation</span>
+      <span class="chip" style="border-color:#f59e0b;color:#f59e0b">LlamaIndex → RAG / retrieval</span>
+      <span class="chip" style="border-color:#58a6ff;color:#58a6ff">Microsoft AF → Simple handoffs</span>
+    </div>
+  </div>
+
+</div><!-- end #deck -->
+
+<!-- ── Navigation ─────────────────────────────────────────────────────────── -->
+<nav id="nav">
+  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>← Prev</button>
+  <div class="dot-row" id="dots"></div>
+  <span id="slide-counter">1 / 9</span>
+  <button class="nav-btn" id="btn-next" onclick="navigate(1)">Next →</button>
+</nav>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor:       '#f59e0b',
+      primaryTextColor:   '#e6edf3',
+      primaryBorderColor: '#92400e',
+      lineColor:          '#8b949e',
+      secondaryColor:     '#161b22',
+      tertiaryColor:      '#0d1117',
+      clusterBkg:         '#161b22',
+      clusterBorder:      '#f59e0b',
+    }
+  });
+
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  let current = 0;
+  const dotsContainer = document.getElementById('dots');
+  const counter       = document.getElementById('slide-counter');
+  const btnPrev       = document.getElementById('btn-prev');
+  const btnNext       = document.getElementById('btn-next');
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  });
+
+  function goTo(index) {
+    if (index < 0 || index >= slides.length) return;
+    const isForward = index > current;
+    const leaving = slides[current];
+
+    leaving.classList.remove('active');
+    if (isForward) {
+      leaving.classList.add('exit-left');
+      setTimeout(() => leaving.classList.remove('exit-left'), 500);
+    }
+
+    current = index;
+    slides[current].classList.remove('exit-left');
+    slides[current].classList.add('active');
+    updateNav();
+  }
+
+  function navigate(dir) {
+    goTo(current + dir);
+  }
+
+  function updateNav() {
+    btnPrev.disabled = (current === 0);
+    btnNext.disabled = (current === slides.length - 1);
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+  });
+
+  updateNav();
+</script>
+</body>
+</html>
