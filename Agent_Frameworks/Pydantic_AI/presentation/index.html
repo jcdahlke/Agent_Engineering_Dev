@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pydantic AI — Advanced Research Multi-Agent System</title>
+  <style>
+    /* ── Variables ──────────────────────────────────────────────── */
+    :root {
+      --bg:         #0d1117;
+      --surface:    #161b22;
+      --border:     #30363d;
+      --pink:       #e92063;   /* Pydantic AI brand */
+      --pink-dim:   #3d0a1e;
+      --pink-glow:  #b5174e;
+      --blue:       #58a6ff;
+      --yellow:     #d29922;
+      --red:        #f85149;
+      --purple:     #bc8cff;
+      --green:      #3fb950;
+      --text:       #e6edf3;
+      --muted:      #8b949e;
+      --radius:     12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Deck ────────────────────────────────────────────────────── */
+    #deck {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 60px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      pointer-events: none;
+      overflow-y: auto;
+    }
+    .slide.active   { opacity: 1; transform: translateX(0); pointer-events: all; }
+    .slide.exit-left { opacity: 0; transform: translateX(-60px); }
+
+    /* ── Typography ──────────────────────────────────────────────── */
+    h1 { font-size: 2.8rem; font-weight: 700; line-height: 1.15; text-align: center; }
+    h2 { font-size: 1.9rem; font-weight: 700; margin-bottom: 28px; color: var(--pink); text-align: center; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+    p  { line-height: 1.7; color: var(--muted); font-size: 1rem; }
+    .accent   { color: var(--pink); }
+    .subtitle { font-size: 1.2rem; color: var(--muted); margin-top: 14px; text-align: center; }
+
+    /* ── Nav ─────────────────────────────────────────────────────── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 14px 32px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    nav button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    nav button:hover { background: var(--border); border-color: var(--pink); }
+    nav button:disabled { opacity: 0.3; cursor: default; }
+    .dots { display: flex; gap: 8px; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+    }
+    .dot.active { background: var(--pink); transform: scale(1.3); }
+    #slide-label { font-size: 0.82rem; color: var(--muted); min-width: 72px; text-align: center; }
+
+    /* ── Cards ───────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: var(--pink); transform: translateY(-2px); }
+    .card-icon  { font-size: 1.6rem; margin-bottom: 8px; }
+    .card h3    { font-size: 0.95rem; color: var(--text); margin-bottom: 6px; }
+    .card p     { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── Grids ───────────────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 860px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; max-width: 960px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 100%; max-width: 1080px; }
+
+    /* ── Slide 1: Title ──────────────────────────────────────────── */
+    .hero-logo {
+      width: 80px; height: 80px;
+      background: var(--pink-dim);
+      border: 2px solid var(--pink);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.4rem; font-weight: 900;
+      color: var(--pink);
+      margin-bottom: 28px;
+      box-shadow: 0 0 30px rgba(233, 32, 99, 0.3);
+      font-family: monospace;
+    }
+    .badge-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; justify-content: center; }
+    .badge {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .badge span { color: var(--pink); font-weight: 600; }
+
+    /* ── Feature cards ───────────────────────────────────────────── */
+    .feat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+    .feat-card:hover { border-color: var(--pink); }
+    .feat-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .feat-card h3 { font-size: 0.95rem; color: var(--pink); margin-bottom: 6px; }
+    .feat-card p  { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── Architecture diagram ────────────────────────────────────── */
+    .arch-wrap {
+      width: 100%; max-width: 900px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      overflow: auto;
+    }
+
+    /* ── Agent table ─────────────────────────────────────────────── */
+    .agent-table { width: 100%; max-width: 960px; border-collapse: collapse; }
+    .agent-table th {
+      background: var(--pink-dim);
+      color: var(--pink);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 0.82rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .agent-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+      vertical-align: top;
+    }
+    .agent-table td:first-child { color: var(--text); font-weight: 600; }
+    .agent-table tr:hover td { background: rgba(233,32,99,0.05); }
+    .tag-pill {
+      display: inline-block;
+      background: var(--pink-dim);
+      color: var(--pink);
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 0.75rem;
+      margin: 2px;
+      font-family: monospace;
+    }
+
+    /* ── Code snippets ───────────────────────────────────────────── */
+    .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 960px; }
+    .code-card {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .code-card h3 { font-size: 0.85rem; color: var(--pink); margin-bottom: 10px; font-family: monospace; }
+    .code-card pre {
+      font-family: 'Courier New', monospace;
+      font-size: 0.76rem;
+      color: var(--text);
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+    .kw  { color: #ff7b72; }
+    .fn  { color: #d2a8ff; }
+    .str { color: #a5d6ff; }
+    .cm  { color: #8b949e; }
+    .nm  { color: var(--pink); }
+    .de  { color: #d29922; }
+
+    /* ── Pipeline steps ──────────────────────────────────────────── */
+    .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; width: 100%; max-width: 1100px; }
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 12px;
+      opacity: 0; transform: translateY(18px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .step-card.visible { opacity: 1; transform: translateY(0); }
+    .step-card:nth-child(1) { transition-delay: 0.05s; }
+    .step-card:nth-child(2) { transition-delay: 0.12s; }
+    .step-card:nth-child(3) { transition-delay: 0.19s; }
+    .step-card:nth-child(4) { transition-delay: 0.26s; }
+    .step-card:nth-child(5) { transition-delay: 0.33s; }
+    .step-num { font-size: 1.4rem; font-weight: 700; color: var(--pink); margin-bottom: 5px; }
+    .step-card h3 { font-size: 0.85rem; color: var(--text); margin-bottom: 4px; }
+    .step-card p  { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+
+    /* ── Pros / Cons ─────────────────────────────────────────────── */
+    .pc-list { list-style: none; width: 100%; max-width: 840px; }
+    .pc-list li {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem; color: var(--muted);
+    }
+    .pc-list li:last-child { border-bottom: none; }
+    .pc-list .icon { font-size: 1.1rem; margin-top: 1px; flex-shrink: 0; }
+    .pc-list li strong { color: var(--text); display: block; margin-bottom: 2px; }
+
+    /* ── Use-case cards ──────────────────────────────────────────── */
+    .uc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 960px; }
+    .uc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+    .uc-card:hover { border-color: var(--pink); }
+    .uc-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .uc-card h3 { font-size: 0.9rem; color: var(--pink); margin-bottom: 6px; }
+    .uc-card p  { font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
+
+    /* ── Comparison table ────────────────────────────────────────── */
+    .cmp-table { width: 100%; max-width: 940px; border-collapse: collapse; }
+    .cmp-table th {
+      background: var(--pink-dim); color: var(--pink);
+      padding: 9px 12px; text-align: left;
+      font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .cmp-table td {
+      padding: 9px 12px; border-bottom: 1px solid var(--border);
+      font-size: 0.82rem; color: var(--muted); vertical-align: top;
+    }
+    .cmp-table td:first-child { color: var(--text); font-weight: 600; }
+    .cmp-table tr:hover td { background: rgba(233,32,99,0.05); }
+    .yes { color: var(--green); font-weight: 600; }
+    .no  { color: var(--red); }
+    .partial { color: var(--yellow); }
+
+    /* ── Feature chips ───────────────────────────────────────────── */
+    .chip-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 900px; }
+    .chip {
+      background: var(--pink-dim);
+      border: 1px solid var(--pink-glow);
+      color: var(--pink);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.82rem;
+      font-family: monospace;
+      font-weight: 600;
+      cursor: default;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .chip:hover { background: rgba(233,32,99,0.25); transform: scale(1.05); }
+
+    /* ── Scrollbar ───────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 1 — Title
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide active" id="s1">
+    <div class="hero-logo">P</div>
+    <h1>Advanced Research<br><span class="accent">Multi-Agent System</span></h1>
+    <p class="subtitle">Built with <strong style="color:var(--pink)">Pydantic AI</strong> — Type-Safe Agent Framework</p>
+    <div class="badge-row">
+      <div class="badge"><span>5</span> Typed Agents</div>
+      <div class="badge"><span>RunContext</span> Dependency Injection</div>
+      <div class="badge"><span>@agent.tool</span> Decorator</div>
+      <div class="badge"><span>Structured</span> Outputs</div>
+      <div class="badge"><span>ModelRetry</span> Validation</div>
+      <div class="badge"><span>Streaming</span> Support</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 2 — What is Pydantic AI?
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s2">
+    <h2>What is Pydantic AI?</h2>
+    <p style="max-width:700px;text-align:center;margin-bottom:28px">
+      Created by <strong style="color:var(--text)">Samuel Colvin</strong> and the Pydantic team — the same team behind
+      <strong style="color:var(--text)">Pydantic v2</strong>, which powers FastAPI, Django, SQLModel, and most of the
+      Python AI ecosystem. Pydantic AI brings the same type-safety philosophy to building AI agents.
+    </p>
+    <div class="grid-3" style="max-width:960px">
+      <div class="feat-card">
+        <div class="feat-icon">🔒</div>
+        <h3>Type-Safe Agents</h3>
+        <p><code>Agent[DepsType, OutputType]</code> — fully generic. IDE autocomplete on every agent input and output, no runtime surprises.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">💉</div>
+        <h3>Dependency Injection</h3>
+        <p><code>RunContext[DepsType]</code> passed to every tool and system prompt. Inject HTTP clients, config, databases — no global state.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📦</div>
+        <h3>Structured Outputs</h3>
+        <p>Set <code>output_type=YourModel</code> and the agent <em>guarantees</em> a valid Pydantic model back — no string parsing.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🛠️</div>
+        <h3>@agent.tool Decorator</h3>
+        <p>Register tools on a specific agent instance. Tools receive <code>RunContext</code> for type-safe access to injected dependencies.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔄</div>
+        <h3>Output Validation + Retry</h3>
+        <p><code>@agent.output_validator</code> runs after each response. Raise <code>ModelRetry</code> to send feedback back and regenerate.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🌊</div>
+        <h3>Streaming</h3>
+        <p><code>async with agent.run_stream() as s:</code> streams tokens incrementally. Full async/await throughout — production-grade.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 3 — System Architecture (Mermaid)
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s3">
+    <h2>System Architecture</h2>
+    <div class="arch-wrap">
+      <div id="mermaid-arch" style="text-align:center"></div>
+    </div>
+    <p style="margin-top:16px;font-size:0.82rem;text-align:center">
+      Agents are called like regular <strong style="color:var(--text)">async Python functions</strong>
+      — no graph topology, no message bus. Context flows via <code style="color:var(--pink)">deps=</code>.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 4 — Agent Roles
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s4">
+    <h2>Agent Roles</h2>
+    <table class="agent-table">
+      <thead>
+        <tr>
+          <th>Agent</th>
+          <th>Model</th>
+          <th>Output Type</th>
+          <th>Key Role</th>
+          <th>Special Pydantic AI Feature</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Supervisor</td>
+          <td>gpt-4o-mini</td>
+          <td><span class="tag-pill">str</span></td>
+          <td>Plans the research strategy, defines sub-topics and scope</td>
+          <td><code>@agent.system_prompt</code> reads depth from <code>ctx.deps.config</code></td>
+        </tr>
+        <tr>
+          <td>Researcher</td>
+          <td>gpt-4o-mini</td>
+          <td><span class="tag-pill">ResearchFindings</span></td>
+          <td>Gathers data via web search, arXiv, Wikipedia, and page scraping</td>
+          <td>4 tools using <code>ctx.deps.http_client</code> (injected async HTTP client)</td>
+        </tr>
+        <tr>
+          <td>Analyzer</td>
+          <td>gpt-4o</td>
+          <td><span class="tag-pill">AnalysisResult</span></td>
+          <td>Extracts key findings, themes, and confidence from raw content</td>
+          <td><code>@agent.output_validator</code> + <code>ModelRetry</code> enforces ≥3 findings</td>
+        </tr>
+        <tr>
+          <td>Writer</td>
+          <td>gpt-4o</td>
+          <td><span class="tag-pill">WrittenReport</span></td>
+          <td>Generates a structured Markdown report with sections and citations</td>
+          <td>Message history from analyzer chains full context via <code>.new_messages()</code></td>
+        </tr>
+        <tr>
+          <td>Critic</td>
+          <td>gpt-4o-mini</td>
+          <td><span class="tag-pill">CritiqueResult</span></td>
+          <td>Scores report quality (0-1), approves or triggers revision loop</td>
+          <td><code>@agent.output_validator</code> enforces approval consistency</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 5 — Key Pydantic AI Features Used
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s5">
+    <h2>Key Pydantic AI Features Used</h2>
+    <div class="chip-row" style="margin-bottom:28px">
+      <div class="chip">Agent[DepsT, OutputT]</div>
+      <div class="chip">RunContext[DepsType]</div>
+      <div class="chip">@agent.tool</div>
+      <div class="chip">@agent.system_prompt</div>
+      <div class="chip">@agent.output_validator</div>
+      <div class="chip">ModelRetry</div>
+      <div class="chip">deps=deps</div>
+      <div class="chip">result.new_messages()</div>
+      <div class="chip">agent.run_stream()</div>
+      <div class="chip">stream.stream_text(delta=True)</div>
+      <div class="chip">output_type=PydanticModel</div>
+      <div class="chip">OpenAIModel(...)</div>
+    </div>
+    <div class="code-grid">
+      <div class="code-card">
+        <h3>Typed Agent Declaration</h3>
+        <pre><span class="cm"># Fully typed — IDE knows DepsType and OutputType</span>
+<span class="nm">researcher_agent</span>: <span class="fn">Agent</span>[<span class="nm">ResearchDependencies</span>, <span class="nm">ResearchFindings</span>] = <span class="fn">Agent</span>(
+    <span class="nm">model</span>=<span class="fn">OpenAIModel</span>(<span class="str">"gpt-4o-mini"</span>),
+    <span class="nm">output_type</span>=<span class="nm">ResearchFindings</span>,
+    <span class="nm">deps_type</span>=<span class="nm">ResearchDependencies</span>,
+)</pre>
+      </div>
+      <div class="code-card">
+        <h3>Dependency-Injected Tool</h3>
+        <pre><span class="de">@researcher_agent.tool</span>
+<span class="kw">async def</span> <span class="fn">scrape_webpage</span>(
+    <span class="nm">ctx</span>: <span class="fn">RunContext</span>[<span class="nm">ResearchDependencies</span>],
+    <span class="nm">url</span>: <span class="kw">str</span>,
+) -> <span class="kw">str</span>:
+    <span class="cm"># Uses injected client — no global state</span>
+    <span class="nm">resp</span> = <span class="kw">await</span> <span class="nm">ctx</span>.deps.<span class="nm">http_client</span>.<span class="fn">get</span>(<span class="nm">url</span>)
+    ...</pre>
+      </div>
+      <div class="code-card">
+        <h3>Output Validator + ModelRetry</h3>
+        <pre><span class="de">@analyzer_agent.output_validator</span>
+<span class="kw">async def</span> <span class="fn">validate_analysis</span>(
+    <span class="nm">ctx</span>: <span class="fn">RunContext</span>[<span class="nm">ResearchDependencies</span>],
+    <span class="nm">result</span>: <span class="nm">AnalysisResult</span>,
+) -> <span class="nm">AnalysisResult</span>:
+    <span class="kw">if</span> <span class="fn">len</span>(<span class="nm">result</span>.key_findings) < 3:
+        <span class="kw">raise</span> <span class="fn">ModelRetry</span>(<span class="str">"Need ≥3 findings"</span>)
+    <span class="kw">return</span> <span class="nm">result</span></pre>
+      </div>
+      <div class="code-card">
+        <h3>Message History Chaining</h3>
+        <pre><span class="cm"># Researcher result carries its message history</span>
+<span class="nm">res_result</span> = <span class="kw">await</span> <span class="nm">researcher_agent</span>.<span class="fn">run</span>(
+    <span class="nm">prompt</span>, <span class="nm">deps</span>=<span class="nm">deps</span>
+)
+<span class="cm"># Analyzer receives full conversation context</span>
+<span class="nm">ana_result</span> = <span class="kw">await</span> <span class="nm">analyzer_agent</span>.<span class="fn">run</span>(
+    <span class="nm">prompt</span>, <span class="nm">deps</span>=<span class="nm">deps</span>,
+    <span class="nm">message_history</span>=<span class="nm">res_result</span>.<span class="fn">new_messages</span>(),
+)</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 6 — How It Works
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s6">
+    <h2>How It Works</h2>
+    <div class="steps" id="step-cards">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h3>Supervisor Plans</h3>
+        <p><code>await supervisor_agent.run(topic, deps=deps)</code> — returns a research plan string. Dynamic system prompt reads depth from <code>ctx.deps.config</code>.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h3>Researcher Gathers</h3>
+        <p>Executes DuckDuckGo, arXiv, Wikipedia, and scrape tools. Each tool injects <code>ctx.deps.http_client</code>. Appends URLs to <code>ctx.deps.sources</code>.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h3>Analyzer Extracts</h3>
+        <p>Receives content + <code>message_history</code> from step 2. Output validator enforces quality via <code>ModelRetry</code>. Returns typed <code>AnalysisResult</code>.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <h3>Writer Drafts</h3>
+        <p>Chains <code>.new_messages()</code> from analyzer. Returns structured <code>WrittenReport</code> with title, sections, and citations. Loops if revised.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">5</div>
+        <h3>Critic Reviews</h3>
+        <p>Scores 0-1. <code>@output_validator</code> enforces consistency. If score &lt;0.7, sends revision instructions back to Writer (up to MAX_REVISIONS).</p>
+      </div>
+    </div>
+    <p style="margin-top:22px;font-size:0.82rem;text-align:center;color:var(--muted)">
+      One shared <code style="color:var(--pink)">ResearchDependencies</code> instance flows through every step via <code style="color:var(--pink)">deps=deps</code> — single HTTP client, accumulated sources, session ID.
+    </p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 7 — Unique Pydantic AI Patterns
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s7">
+    <h2>Unique Pydantic AI Patterns</h2>
+    <div class="code-grid" style="grid-template-columns:1fr 1fr;max-width:960px">
+      <div class="code-card" style="grid-column:1/-1">
+        <h3>Dependency Injection — the core pattern</h3>
+        <pre><span class="cm"># pipeline.py — one deps instance, shared across all 5 agents</span>
+<span class="kw">async with</span> <span class="nm">httpx</span>.<span class="fn">AsyncClient</span>(<span class="nm">timeout</span>=45.0) <span class="kw">as</span> <span class="nm">http</span>:
+    <span class="nm">deps</span> = <span class="fn">ResearchDependencies</span>(
+        <span class="nm">http_client</span>=<span class="nm">http</span>,      <span class="cm"># shared — no per-request client creation</span>
+        <span class="nm">config</span>=<span class="nm">config</span>,          <span class="cm"># typed settings, not env vars everywhere</span>
+    )
+    <span class="cm"># Every agent gets deps — fully typed, mockable in tests</span>
+    <span class="nm">result</span> = <span class="kw">await</span> <span class="nm">researcher_agent</span>.<span class="fn">run</span>(<span class="nm">prompt</span>, <span class="nm">deps</span>=<span class="nm">deps</span>)</pre>
+      </div>
+      <div class="code-card">
+        <h3>Dynamic System Prompt</h3>
+        <pre><span class="de">@researcher_agent.system_prompt</span>
+<span class="kw">async def</span> <span class="fn">dynamic_prompt</span>(
+    <span class="nm">ctx</span>: <span class="fn">RunContext</span>[<span class="nm">ResearchDependencies</span>]
+) -> <span class="kw">str</span>:
+    <span class="cm"># Reads config from injected deps at runtime</span>
+    <span class="nm">depth</span> = <span class="nm">ctx</span>.deps.<span class="nm">config</span>.research_depth
+    <span class="kw">return</span> <span class="str">f"Depth: </span><span class="nm">{depth}</span><span class="str">. Session: </span><span class="nm">{ctx.deps.session_id}</span><span class="str">"</span></pre>
+      </div>
+      <div class="code-card">
+        <h3>Streaming Output</h3>
+        <pre><span class="cm"># runner.py — stream mode demo</span>
+<span class="kw">async with</span> <span class="nm">writer_agent</span>.<span class="fn">run_stream</span>(
+    <span class="nm">prompt</span>, <span class="nm">deps</span>=<span class="nm">deps</span>
+) <span class="kw">as</span> <span class="nm">stream</span>:
+    <span class="kw">async for</span> <span class="nm">chunk</span> <span class="kw">in</span> <span class="nm">stream</span>.<span class="fn">stream_text</span>(<span class="nm">delta</span>=<span class="kw">True</span>):
+        <span class="fn">print</span>(<span class="nm">chunk</span>, end=<span class="str">""</span>, flush=<span class="kw">True</span>)</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 8 — Pros & Strengths
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s8">
+    <h2>Pros &amp; Strengths</h2>
+    <ul class="pc-list">
+      <li>
+        <span class="icon">🔒</span>
+        <div><strong>End-to-end type safety</strong>IDE autocomplete on <code>ctx.deps.http_client</code>, <code>result.output.key_findings</code>, every agent input and output. Runtime errors caught at declaration time.</div>
+      </li>
+      <li>
+        <span class="icon">🐍</span>
+        <div><strong>Pythonic API</strong>Agents are called like regular <code>async def</code> functions. No graph classes, no YAML, no DSLs — just Python you already know.</div>
+      </li>
+      <li>
+        <span class="icon">🧪</span>
+        <div><strong>Excellent testability</strong>Dependency injection means you swap <code>ResearchDependencies(http_client=MockClient())</code> in tests. No monkeypatching, no global mocks.</div>
+      </li>
+      <li>
+        <span class="icon">📦</span>
+        <div><strong>Guaranteed structured outputs</strong><code>output_type=PydanticModel</code> means you always get a validated model back. No string parsing, no <code>.get("key")</code> on dict responses.</div>
+      </li>
+      <li>
+        <span class="icon">🔄</span>
+        <div><strong>Built-in retry on validation failure</strong><code>ModelRetry</code> sends your error message back to the model, which regenerates. Elegant feedback loop with zero extra code.</div>
+      </li>
+      <li>
+        <span class="icon">🌐</span>
+        <div><strong>Model-agnostic</strong>Swap <code>OpenAIModel</code> for <code>AnthropicModel</code>, <code>GeminiModel</code>, or any provider. Same agent code, different constructor.</div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 9 — Cons & Limitations
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s9">
+    <h2>Cons &amp; Limitations</h2>
+    <ul class="pc-list">
+      <li>
+        <span class="icon">🌱</span>
+        <div><strong>Newer, smaller ecosystem</strong>Released in late 2024. Far fewer tutorials, community examples, and third-party integrations than LangChain or CrewAI.</div>
+      </li>
+      <li>
+        <span class="icon">🗺️</span>
+        <div><strong>No built-in graph topology</strong>You wire the pipeline yourself in Python. Great for control, but LangGraph gives you visual state machines, persistence, and conditional branching out of the box.</div>
+      </li>
+      <li>
+        <span class="icon">💾</span>
+        <div><strong>No built-in persistence or checkpointing</strong>LangGraph's MemorySaver / InMemoryStore and CrewAI's long-term SQLite memory have no equivalent. You bring your own storage.</div>
+      </li>
+      <li>
+        <span class="icon">⚡</span>
+        <div><strong>Async-first complexity</strong>The entire framework is <code>async/await</code>. For simple scripts or beginners, this is overhead. Calling sync code requires <code>asyncio.to_thread()</code>.</div>
+      </li>
+      <li>
+        <span class="icon">🔗</span>
+        <div><strong>Per-instance tool registration</strong><code>@agent.tool</code> binds to a specific agent instance. Sharing the same tool across multiple agents requires duplicate wrapper functions.</div>
+      </li>
+      <li>
+        <span class="icon">🤝</span>
+        <div><strong>No declarative agent handoffs</strong>OpenAI Agent SDK's <code>handoff_to=</code> and CrewAI's task routing handle orchestration for you. In Pydantic AI, you write the orchestration logic explicitly.</div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Slide 10 — Use Cases & When to Choose Pydantic AI
+  ══════════════════════════════════════════════════════════════════ -->
+  <div class="slide" id="s10">
+    <h2>Use Cases &amp; When to Choose</h2>
+    <div class="uc-grid" style="margin-bottom:24px">
+      <div class="uc-card">
+        <div class="uc-icon">🏭</div>
+        <h3>Production Agent APIs</h3>
+        <p>Serving agents behind a FastAPI endpoint? Pydantic AI's native Pydantic types integrate seamlessly — request models become agent deps, response models become outputs.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon">🧪</div>
+        <h3>Test-Driven Agent Development</h3>
+        <p>Need 90%+ coverage? Dependency injection makes every agent trivially unit-testable. Inject mock clients, fake configs, and controlled tool responses.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon">🔗</div>
+        <h3>Multi-Model Pipelines</h3>
+        <p>Different agents on different providers with guaranteed typed handoffs? <code>Agent[Deps, TypedOutput]</code> ensures each step's output is the next step's typed input.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon">📋</div>
+        <h3>Structured Data Extraction</h3>
+        <p>Converting unstructured text to validated Pydantic models. The output validator + ModelRetry loop ensures you always get clean, schema-compliant data.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon">🏗️</div>
+        <h3>Teams Already Using Pydantic</h3>
+        <p>If your stack already uses FastAPI + Pydantic, Pydantic AI's models, validators, and settings patterns are immediately familiar — zero conceptual overhead.</p>
+      </div>
+      <div class="uc-card">
+        <div class="uc-icon">🚫</div>
+        <h3>When NOT to Choose It</h3>
+        <p>Need persistence/HITL? Use LangGraph. Need zero-boilerplate multi-agent? Use CrewAI. Need native handoffs + tracing? Use OpenAI Agent SDK. Need RAG? Use LlamaIndex.</p>
+      </div>
+    </div>
+    <table class="cmp-table" style="font-size:0.78rem">
+      <thead>
+        <tr><th>Feature</th><th>Pydantic AI</th><th>LangGraph</th><th>CrewAI</th><th>OpenAI SDK</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Type-safe outputs</td><td class="yes">✓ Native</td><td class="partial">Partial</td><td class="no">No</td><td class="partial">Via Pydantic</td></tr>
+        <tr><td>Dependency injection</td><td class="yes">✓ RunContext</td><td class="no">No</td><td class="no">No</td><td class="partial">Context wrapper</td></tr>
+        <tr><td>Built-in persistence</td><td class="no">No</td><td class="yes">✓ MemorySaver</td><td class="yes">✓ SQLite</td><td class="no">No</td></tr>
+        <tr><td>Graph / state machine</td><td class="no">No</td><td class="yes">✓ StateGraph</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Output validation + retry</td><td class="yes">✓ ModelRetry</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Streaming</td><td class="yes">✓ run_stream()</td><td class="yes">✓ stream_events</td><td class="partial">Limited</td><td class="yes">✓ run_streamed</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<nav>
+  <button id="btn-prev" onclick="move(-1)">← Prev</button>
+  <div class="dots" id="dots"></div>
+  <span id="slide-label">1 / 10</span>
+  <button id="btn-next" onclick="move(1)">Next →</button>
+</nav>
+
+<!-- Mermaid -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#e92063',
+      primaryTextColor: '#e6edf3',
+      primaryBorderColor: '#30363d',
+      lineColor: '#8b949e',
+      secondaryColor: '#161b22',
+      tertiaryColor: '#0d1117',
+      edgeLabelBackground: '#161b22',
+      background: '#0d1117',
+    }
+  });
+
+  const archDef = `
+flowchart TD
+    S([START]) --> PL
+
+    PL["pipeline.py\\nrun_research(topic, depth)"]
+
+    PL -->|"await supervisor_agent.run"| SUP
+    SUP["Supervisor\\nAgent[Deps, str]"] -->|"research_plan: str"| PL
+
+    PL -->|"await researcher_agent.run\\ndeps=deps"| RES
+    RES["Researcher\\nAgent[Deps, ResearchFindings]"] -->|"findings"| PL
+
+    PL -->|"await analyzer_agent.run\\ndeps=deps, message_history=..."| ANA
+    ANA["Analyzer\\nAgent[Deps, AnalysisResult]"] -->|"analysis"| PL
+
+    PL -->|"await writer_agent.run\\ndeps=deps, message_history=..."| WRI
+    WRI["Writer\\nAgent[Deps, WrittenReport]"] -->|"report"| PL
+
+    PL -->|"await critic_agent.run\\ndeps=deps"| CRI
+    CRI{"Critic\\nAgent[Deps, CritiqueResult]"}
+
+    CRI -->|"score >= 0.7\\napproved=True"| E([END])
+    CRI -->|"revision needed\\ncycles < MAX_REVISIONS"| PL
+
+    style SUP fill:#1a1a2e,stroke:#e92063,color:#e6edf3
+    style RES fill:#1a2a1a,stroke:#3fb950,color:#e6edf3
+    style ANA fill:#2a2a1a,stroke:#d29922,color:#e6edf3
+    style WRI fill:#1a1a3a,stroke:#a371f7,color:#e6edf3
+    style CRI fill:#2a1a1a,stroke:#f85149,color:#e6edf3
+    style PL  fill:#2a1a1e,stroke:#e92063,color:#e6edf3
+    style S   fill:#e92063,stroke:#e92063,color:#0d1117
+    style E   fill:#3fb950,stroke:#3fb950,color:#0d1117
+  `;
+
+  async function renderMermaid() {
+    const el = document.getElementById('mermaid-arch');
+    const { svg } = await mermaid.render('arch-svg', archDef);
+    el.innerHTML = svg;
+  }
+  renderMermaid();
+
+  /* ── Slide navigation ─────────────────────────────────────────── */
+  const TOTAL = 10;
+  let current = 0;
+
+  const slides = () => document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  const label  = document.getElementById('slide-label');
+  const btnP   = document.getElementById('btn-prev');
+  const btnN   = document.getElementById('btn-next');
+
+  // Build dots
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    const sl = slides();
+    sl[current].classList.remove('active');
+    sl[current].classList.add('exit-left');
+    setTimeout(() => sl[current].classList.remove('exit-left'), 450);
+
+    // Animate step cards on slide 6 (index 5)
+    if (n === 5) {
+      setTimeout(() => {
+        document.querySelectorAll('.step-card').forEach(c => c.classList.add('visible'));
+      }, 300);
+    }
+
+    current = n;
+    sl[current].classList.add('active');
+
+    // Update dots
+    document.querySelectorAll('.dot').forEach((d, i) =>
+      d.classList.toggle('active', i === current)
+    );
+    label.textContent = `${current + 1} / ${TOTAL}`;
+    btnP.disabled = current === 0;
+    btnN.disabled = current === TOTAL - 1;
+  }
+
+  function move(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < TOTAL) goTo(next);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') move(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   move(-1);
+  });
+
+  // Init button state
+  btnP.disabled = true;
+</script>
+</body>
+</html>
