@@ -15,7 +15,9 @@
       "WebSearch",
       "Bash(pip index *)",
       "Bash(pip install *)",
-      "Bash(grep -E \"\\\\.\\(md|txt\\)$\")"
+      "Bash(grep -E \"\\\\.\\(md|txt\\)$\")",
+      "Bash(Get-ChildItem -Recurse -Force)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

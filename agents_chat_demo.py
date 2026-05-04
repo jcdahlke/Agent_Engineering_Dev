@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).parent / ".env")
 
-from agents import Agent, Runner
+from agents import Agent, Runner, SQLiteSession
 from agents.extensions.memory.async_sqlite_session import AsyncSQLiteSession
 from agents.memory.openai_conversations_session import OpenAIConversationsSession
 
