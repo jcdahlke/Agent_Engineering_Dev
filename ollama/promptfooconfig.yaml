@@ -1,0 +1,175 @@
+description: Phishing email detection benchmark across Ollama models
+providers:
+- ollama:chat:llama3.2
+- ollama:chat:phi3.5
+- ollama:chat:gemma2:2b
+- ollama:chat:Matheswaran/email-classifier
+prompts:
+- 'You are an email classification agent. You will be given an email, and you must determine if the email is phishing or legitimate.
+  Start the response by saying either ''phishing'' or ''legitimate''. Here is the email:
+
+
+  {{email_text}}'
+tests:
+- description: phishing | severity=high confidence=0.9
+  vars:
+    email_text: 'Hi there, I remembered you mentioning the children''s hospital charity gala where we ran into each other.
+      I''m a stranded traveler right now; the hotel is asking for payment verification to extend stay. If you could assist
+      with an emergency loan, I can provide replacement cards soon—trust building is important to me.
+
+
+      Keywords: international issues, charity gala, we talked about
+
+
+      Sincerely,
+
+      Taylor Brown'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("phishing")
+- description: phishing | severity=high confidence=0.95
+  vars:
+    email_text: 'Hi there, I remembered you mentioning the children''s hospital charity gala where we ran into each other.
+      I''m a stranded traveler right now; the hotel is asking for payment verification to extend stay. If you could assist
+      with an emergency loan, I can provide replacement cards soon—trust building is important to me.
+
+
+      Keywords: we talked about, payment verification, financial request, ran into
+
+
+      Support Desk,
+
+      Jordan Wong'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("phishing")
+- description: phishing | severity=high confidence=0.83
+  vars:
+    email_text: 'Hello, your login has been restricted. Use the secure link to update password and restore access. Enter your
+      2FA code to continue.
+
+
+      Keywords: username recover account two factor log in
+
+
+      Compliance Team,
+
+      Jamie Brown'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("phishing")
+- description: legitimate | severity=low confidence=0.98
+  vars:
+    email_text: 'Subject: Documentation review
+
+
+      Thanks for attending the workshop. Here are links to references and the slide deck.
+
+
+      I''ll share the slides later today.
+
+
+      Best,
+
+      Alex Brown'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("legitimate")
+- description: legitimate | severity=low confidence=1.0
+  vars:
+    email_text: 'Subject: Project update
+
+
+      Please find the minutes from our last meeting. Action items are listed at the end of the note for convenience.
+
+
+      Let me know if the timing works for you.
+
+
+      Best,
+
+      Taylor Patel'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("legitimate")
+- description: legitimate | severity=low confidence=0.97
+  vars:
+    email_text: 'Subject: Onboarding checklist
+
+
+      I booked the lab for next Wednesday. The calendar invite includes location and equipment details.
+
+
+      I''ll share the slides later today.
+
+
+      Best,
+
+      Riley Khan'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("legitimate")
+- description: phishing | severity=high confidence=0.85
+  vars:
+    email_text: 'Hi there, your account requires verification. To restore access, reset your password and enter your username,
+      2FA verification code, and recovery key.
+
+
+      Keywords: reset, log in, recovery key, backup codes
+
+
+      Account Services,
+
+      Avery Brown'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("phishing")
+- description: legitimate | severity=low confidence=0.98
+  vars:
+    email_text: 'Subject: Weekly status report
+
+
+      Hi team, sharing notes from today''s sync. Next steps are in the shared doc. Let me know your thoughts.
+
+
+      I''ll share the slides later today.
+
+
+      Best,
+
+      Casey Kim'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("legitimate")
+- description: phishing | severity=high confidence=0.8
+  vars:
+    email_text: 'Hi there, congratulations! You are the selected recipient of a reward. To claim your payment of $1,200, please
+      provide your credit card to process the sum. This deal is limited time.
+
+
+      Keywords: earnings credit card wire dollars
+
+
+      Support Desk,
+
+      Avery Kim'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("phishing")
+- description: legitimate | severity=low confidence=0.98
+  vars:
+    email_text: 'Subject: Classroom logistics
+
+
+      Quick reminder about the training session tomorrow. The materials are in the shared drive.
+
+
+      I''ll share the slides later today.
+
+
+      Best,
+
+      Jamie Khan'
+  assert:
+  - type: javascript
+    value: output.trim().toLowerCase().replace(/^[^a-z]+/, "").startsWith("legitimate")

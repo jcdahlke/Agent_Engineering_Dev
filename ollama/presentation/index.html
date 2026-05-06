@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Running Local AI with Ollama — BYU Agent Engineering</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ===================================================
+       VIEWPORT BASE — mandatory, included in full
+       =================================================== */
+    html, body { height: 100%; overflow-x: hidden; }
+    html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+    .slide {
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .slide-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-height: 100%;
+      overflow: hidden;
+      padding: var(--slide-padding);
+    }
+    :root {
+      --title-size: clamp(1.5rem, 5vw, 4rem);
+      --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
+      --h3-size: clamp(1rem, 2.5vw, 1.75rem);
+      --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
+      --small-size: clamp(0.65rem, 1vw, 0.875rem);
+      --slide-padding: clamp(1rem, 4vw, 4rem);
+      --content-gap: clamp(0.5rem, 2vw, 2rem);
+      --element-gap: clamp(0.25rem, 1vw, 1rem);
+    }
+    .card, .container, .content-box { max-width: min(90vw, 1000px); max-height: min(80vh, 700px); }
+    .feature-list li, .bullet-list li { font-size: var(--body-size); line-height: 1.4; }
+    img, .image-container { max-width: 100%; max-height: min(50vh, 400px); object-fit: contain; }
+    @media (max-height: 700px) {
+      :root { --slide-padding: clamp(0.75rem, 3vw, 2rem); --content-gap: clamp(0.4rem, 1.5vw, 1rem); --title-size: clamp(1.25rem, 4.5vw, 2.5rem); --h2-size: clamp(1rem, 3vw, 1.75rem); }
+    }
+    @media (max-height: 600px) {
+      :root { --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem); --content-gap: clamp(0.3rem, 1vw, 0.75rem); --title-size: clamp(1.1rem, 4vw, 2rem); --body-size: clamp(0.7rem, 1.2vw, 0.95rem); }
+      .nav-dots, .keyboard-hint, .decorative { display: none; }
+    }
+    @media (max-height: 500px) {
+      :root { --slide-padding: clamp(0.4rem, 2vw, 1rem); --title-size: clamp(1rem, 3.5vw, 1.5rem); --h2-size: clamp(0.9rem, 2.5vw, 1.25rem); --body-size: clamp(0.65rem, 1vw, 0.85rem); }
+    }
+    @media (max-width: 600px) {
+      :root { --title-size: clamp(1.25rem, 7vw, 2.5rem); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+      html { scroll-behavior: auto; }
+    }
+
+    /* ===================================================
+       PAPER & INK THEME
+       =================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #faf9f7; font-family: 'Source Serif 4', serif; color: #1a1a1a; }
+    .slide { background: #faf9f7; }
+    :root {
+      --cream: #faf9f7;
+      --charcoal: #1a1a1a;
+      --ink-mid: #4a4540;
+      --ink-light: #7a7570;
+      --ink-faint: #ccc8c0;
+      --crimson: #c41e3a;
+      --crimson-soft: rgba(196, 30, 58, 0.07);
+      --green-pro: #3d7a5a;
+      --font-display: 'Cormorant Garamond', serif;
+      --font-body: 'Source Serif 4', serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    /* === PROGRESS BAR === */
+    .progress-bar {
+      position: fixed; top: 0; left: 0;
+      height: 2px; background: var(--crimson); width: 0%;
+      transition: width 0.4s ease; z-index: 100;
+    }
+
+    /* === NAV DOTS === */
+    .nav-dots {
+      position: fixed; right: clamp(0.75rem, 2vw, 1.5rem); top: 50%;
+      transform: translateY(-50%);
+      display: flex; flex-direction: column;
+      gap: clamp(6px, 1vh, 10px); z-index: 100;
+    }
+    .nav-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--ink-faint); border: none;
+      cursor: pointer; transition: background 0.25s, transform 0.25s;
+    }
+    .nav-dot.active { background: var(--crimson); transform: scale(1.5); }
+    .nav-dot:hover { background: var(--ink-mid); }
+
+    /* === SHARED ORNAMENTS & TYPOGRAPHY === */
+    .ornament-row {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: var(--content-gap);
+    }
+    .ornament-row .line { display: block; height: 1px; background: var(--charcoal); flex: 1; max-width: 80px; }
+    .ornament-row .diamond { color: var(--crimson); font-size: clamp(0.75rem, 1.2vw, 0.95rem); }
+    .crimson-rule { width: 36px; height: 2px; background: var(--crimson); }
+    .section-label {
+      font-size: var(--small-size);
+      font-style: italic;
+      color: var(--crimson);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: clamp(0.35rem, 0.8vw, 0.6rem);
+    }
+    .display-title {
+      font-family: var(--font-display);
+      font-size: var(--title-size);
+      font-weight: 600;
+      color: var(--charcoal);
+      line-height: 1.08;
+    }
+    .slide-heading {
+      font-family: var(--font-display);
+      font-size: var(--h2-size);
+      font-weight: 600;
+      color: var(--charcoal);
+      line-height: 1.1;
+      margin-bottom: clamp(0.35rem, 1vw, 0.8rem);
+    }
+    .italic-sub {
+      font-style: italic; color: var(--ink-light);
+      font-size: var(--body-size); line-height: 1.75;
+    }
+    code {
+      font-family: var(--font-mono);
+      font-size: clamp(0.6rem, 1vw, 0.82rem);
+      background: rgba(26,26,26,0.08);
+      color: var(--crimson);
+      padding: 0.1em 0.35em; border-radius: 3px;
+    }
+
+    /* === SLIDE 1: TITLE === */
+    .title-slide {
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .title-slide::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(196,30,58,0.05) 0%, transparent 65%);
+    }
+    .title-slide .inner {
+      position: relative; z-index: 1;
+      max-width: min(78vw, 680px);
+    }
+    .title-slide .ornament-row { justify-content: center; }
+    .title-slide .display-title { margin-bottom: clamp(0.6rem, 1.5vw, 1.2rem); }
+    .title-slide .crimson-rule { margin: 0 auto clamp(0.6rem, 1.5vw, 1.2rem); }
+    .title-footer {
+      margin-top: clamp(0.8rem, 2vw, 1.8rem);
+      display: flex; align-items: center; gap: 14px; justify-content: center;
+    }
+    .title-footer .line { display: block; height: 1px; width: 60px; background: var(--ink-faint); }
+    .title-footer span { font-style: italic; font-size: var(--small-size); color: var(--ink-light); }
+
+    /* === FEATURE GRID (slide 2) === */
+    .content-inner { max-width: min(88vw, 820px); width: 100%; }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(0.5rem, 1.4vw, 1.1rem);
+      margin-top: clamp(0.4rem, 1vw, 0.8rem);
+    }
+    @media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--crimson-soft);
+      border-left: 2px solid var(--crimson);
+      padding: clamp(0.6rem, 1.4vw, 1rem) clamp(0.75rem, 1.6vw, 1.2rem);
+    }
+    .feature-card .fc-title {
+      font-family: var(--font-display); font-size: clamp(0.95rem, 1.8vw, 1.3rem);
+      font-weight: 600; color: var(--charcoal); margin-bottom: 0.2em;
+    }
+    .feature-card .fc-body { font-size: var(--small-size); color: var(--ink-mid); line-height: 1.5; }
+
+    /* === INSTALLATION STEPS (slide 3) === */
+    .steps-list {
+      display: flex; flex-direction: column;
+      gap: clamp(0.5rem, 1.4vh, 1.1rem);
+      margin-top: clamp(0.35rem, 0.9vw, 0.75rem);
+    }
+    .step {
+      display: flex; gap: clamp(0.75rem, 1.8vw, 1.4rem); align-items: flex-start;
+      padding-bottom: clamp(0.5rem, 1.4vh, 1.1rem);
+      border-bottom: 1px solid var(--ink-faint);
+    }
+    .step:last-child { border-bottom: none; padding-bottom: 0; }
+    .step-num {
+      font-family: var(--font-display); font-size: clamp(1.5rem, 3vw, 2.4rem);
+      font-weight: 600; color: var(--crimson); line-height: 1;
+      flex-shrink: 0; width: clamp(1.6rem, 3.2vw, 2.6rem);
+    }
+    .step-title {
+      font-family: var(--font-display); font-size: clamp(0.95rem, 1.8vw, 1.3rem);
+      font-weight: 600; color: var(--charcoal); margin-bottom: 0.2em;
+    }
+    .step-desc { font-size: var(--small-size); color: var(--ink-mid); font-style: italic; margin-bottom: 0.3em; line-height: 1.45; }
+    .code-block {
+      font-family: var(--font-mono);
+      font-size: clamp(0.58rem, 0.95vw, 0.8rem);
+      background: rgba(26,26,26,0.06);
+      border-left: 3px solid var(--crimson);
+      padding: clamp(0.4rem, 1vw, 0.75rem) clamp(0.6rem, 1.2vw, 1rem);
+      border-radius: 0 3px 3px 0;
+      color: var(--charcoal); line-height: 1.65;
+      margin-top: 0.35em;
+    }
+    .code-block .comment { color: var(--ink-light); font-style: italic; }
+    .code-block .key { color: var(--crimson); font-weight: 500; }
+
+    /* === MODEL CARDS (slide 4) === */
+    .model-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: clamp(0.5rem, 1.2vw, 1rem);
+      margin-top: clamp(0.5rem, 1.4vw, 1.1rem);
+    }
+    @media (max-width: 600px) { .model-grid { grid-template-columns: 1fr 1fr; } }
+    .model-card {
+      border: 1px solid var(--ink-faint);
+      padding: clamp(0.6rem, 1.4vw, 1.1rem) clamp(0.5rem, 1.2vw, 0.9rem);
+      text-align: center; position: relative;
+    }
+    .model-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 2px; background: var(--crimson);
+    }
+    .model-size {
+      font-family: var(--font-display); font-size: clamp(1.4rem, 2.8vw, 2.2rem);
+      font-weight: 600; color: var(--crimson); line-height: 1; margin-bottom: 0.2em;
+    }
+    .model-name {
+      font-family: var(--font-mono); font-size: clamp(0.62rem, 1.1vw, 0.85rem);
+      font-weight: 500; color: var(--charcoal); margin-bottom: 0.2em;
+    }
+    .model-maker { font-size: var(--small-size); color: var(--ink-light); font-style: italic; margin-bottom: 0.4em; }
+    .model-cmd code { display: block; font-size: clamp(0.55rem, 0.9vw, 0.75rem); }
+    .models-footer {
+      margin-top: clamp(0.5rem, 1.4vw, 1rem); text-align: center;
+      font-size: var(--small-size); color: var(--ink-mid); font-style: italic;
+    }
+
+    /* === PIPELINE (slide 5) === */
+    .pipeline {
+      display: flex; align-items: center;
+      gap: clamp(0.2rem, 0.6vw, 0.5rem);
+      margin-top: clamp(0.5rem, 1.4vw, 1.1rem);
+    }
+    @media (max-width: 600px) { .pipeline { flex-direction: column; align-items: stretch; } }
+    .pipe-step {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      text-align: center;
+    }
+    .pipe-arrow {
+      font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.5rem);
+      color: var(--ink-faint); flex-shrink: 0; line-height: 1;
+      padding: 0 clamp(0.1rem, 0.3vw, 0.3rem);
+    }
+    @media (max-width: 600px) { .pipe-arrow { transform: rotate(90deg); align-self: center; } }
+    .pipe-num {
+      font-family: var(--font-display); font-size: clamp(1.4rem, 2.8vw, 2.2rem);
+      font-weight: 600; color: var(--crimson); line-height: 1; margin-bottom: 0.3em;
+    }
+    .pipe-card {
+      background: var(--crimson-soft); border-top: 2px solid var(--crimson);
+      padding: clamp(0.5rem, 1.2vw, 0.9rem); width: 100%;
+    }
+    .pipe-title {
+      font-family: var(--font-display); font-size: clamp(0.9rem, 1.7vw, 1.2rem);
+      font-weight: 600; color: var(--charcoal); margin-bottom: 0.2em;
+    }
+    .pipe-desc { font-size: var(--small-size); color: var(--ink-mid); font-style: italic; line-height: 1.4; }
+    .pipe-desc code { font-size: clamp(0.55rem, 0.9vw, 0.75rem); }
+
+    /* === CODE INSIDE (slide 6) === */
+    .code-slide .content-inner { max-width: min(90vw, 860px); }
+    .two-col {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: clamp(0.75rem, 2vw, 1.5rem);
+      margin-top: clamp(0.5rem, 1.4vw, 1.1rem);
+    }
+    @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+    .assertion-card {
+      border: 1px solid var(--ink-faint);
+      padding: clamp(0.5rem, 1.2vw, 0.9rem);
+    }
+    .ac-label {
+      font-family: var(--font-display); font-size: clamp(0.85rem, 1.5vw, 1.1rem);
+      font-weight: 600; color: var(--charcoal); margin-bottom: 0.3em;
+    }
+    .ac-desc { font-size: var(--small-size); color: var(--ink-mid); font-style: italic; line-height: 1.45; }
+
+    /* === VERDICT LISTS (slides 7 & 8) === */
+    .verdict-list {
+      list-style: none; display: flex; flex-direction: column;
+      gap: 0; margin-top: clamp(0.35rem, 0.9vw, 0.7rem);
+    }
+    .verdict-list li {
+      display: flex; align-items: flex-start;
+      gap: clamp(0.6rem, 1.4vw, 1.1rem);
+      padding: clamp(0.45rem, 1vh, 0.85rem) 0;
+      border-bottom: 1px solid var(--ink-faint);
+    }
+    .verdict-list li:last-child { border-bottom: none; }
+    .verdict-mark {
+      font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.5rem);
+      font-weight: 600; line-height: 1.2; flex-shrink: 0;
+      width: clamp(1.1rem, 2.2vw, 1.8rem);
+    }
+    .verdict-mark.pro { color: var(--green-pro); }
+    .verdict-mark.con { color: var(--crimson); }
+    .item-title {
+      font-family: var(--font-display); font-size: clamp(0.9rem, 1.7vw, 1.25rem);
+      font-weight: 600; color: var(--charcoal);
+    }
+    .item-desc { font-size: var(--small-size); color: var(--ink-mid); font-style: italic; line-height: 1.4; margin-top: 0.1em; }
+
+    /* ===================================================
+       ANIMATIONS — Calm / Minimal: slow gentle fades
+       =================================================== */
+    .reveal { opacity: 0; transform: translateY(14px); }
+    .slide.visible .reveal {
+      opacity: 1; transform: translateY(0);
+      transition: opacity 0.9s ease, transform 0.9s ease;
+    }
+    .slide.visible .reveal:nth-child(1) { transition-delay: 0.05s; }
+    .slide.visible .reveal:nth-child(2) { transition-delay: 0.2s; }
+    .slide.visible .reveal:nth-child(3) { transition-delay: 0.32s; }
+    .slide.visible .reveal:nth-child(4) { transition-delay: 0.44s; }
+    .slide.visible .reveal:nth-child(5) { transition-delay: 0.55s; }
+    .slide.visible .reveal:nth-child(6) { transition-delay: 0.65s; }
+
+    /* Stagger feature cards */
+    .feature-card { opacity: 0; transform: translateY(12px); }
+    .slide.visible .feature-card { transition: opacity 0.7s ease, transform 0.7s ease; }
+    .slide.visible .feature-card:nth-child(1) { opacity: 1; transform: none; transition-delay: 0.22s; }
+    .slide.visible .feature-card:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.36s; }
+    .slide.visible .feature-card:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.5s; }
+    .slide.visible .feature-card:nth-child(4) { opacity: 1; transform: none; transition-delay: 0.64s; }
+
+    /* Stagger model cards */
+    .model-card { opacity: 0; transform: translateY(12px); }
+    .slide.visible .model-card { transition: opacity 0.65s ease, transform 0.65s ease; }
+    .slide.visible .model-card:nth-child(1) { opacity: 1; transform: none; transition-delay: 0.2s; }
+    .slide.visible .model-card:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.34s; }
+    .slide.visible .model-card:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.48s; }
+    .slide.visible .model-card:nth-child(4) { opacity: 1; transform: none; transition-delay: 0.62s; }
+
+    /* Stagger install steps */
+    .step { opacity: 0; transform: translateY(12px); }
+    .slide.visible .step { transition: opacity 0.75s ease, transform 0.75s ease; }
+    .slide.visible .step:nth-child(1) { opacity: 1; transform: none; transition-delay: 0.22s; }
+    .slide.visible .step:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.38s; }
+    .slide.visible .step:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.54s; }
+
+    /* Pipeline fades as a unit */
+    .pipeline { opacity: 0; transform: translateY(14px); }
+    .slide.visible .pipeline {
+      opacity: 1; transform: none;
+      transition: opacity 0.85s ease 0.28s, transform 0.85s ease 0.28s;
+    }
+
+    /* Stagger verdict items */
+    .verdict-list li { opacity: 0; transform: translateY(10px); }
+    .slide.visible .verdict-list li { transition: opacity 0.7s ease, transform 0.7s ease; }
+    .slide.visible .verdict-list li:nth-child(1) { opacity: 1; transform: none; transition-delay: 0.22s; }
+    .slide.visible .verdict-list li:nth-child(2) { opacity: 1; transform: none; transition-delay: 0.36s; }
+    .slide.visible .verdict-list li:nth-child(3) { opacity: 1; transform: none; transition-delay: 0.5s; }
+    .slide.visible .verdict-list li:nth-child(4) { opacity: 1; transform: none; transition-delay: 0.64s; }
+    .slide.visible .verdict-list li:nth-child(5) { opacity: 1; transform: none; transition-delay: 0.78s; }
+
+    /* ===================================================
+       INLINE EDITING
+       =================================================== */
+    .edit-hotzone {
+      position: fixed; top: 0; left: 0;
+      width: 80px; height: 80px;
+      z-index: 10000; cursor: pointer;
+    }
+    .edit-toggle {
+      position: fixed; top: 16px; left: 16px;
+      background: var(--crimson); color: #fff;
+      border: none; border-radius: 3px;
+      padding: 5px 12px;
+      font-family: var(--font-body); font-style: italic;
+      font-size: clamp(0.65rem, 1vw, 0.8rem);
+      cursor: pointer; z-index: 10001;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .edit-toggle.show, .edit-toggle.active { opacity: 1; pointer-events: auto; }
+    body.edit-active [contenteditable] {
+      outline: 1px dashed rgba(196,30,58,0.5);
+      cursor: text; border-radius: 2px;
+    }
+    .edit-banner {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--crimson); color: #fff;
+      padding: 6px 20px;
+      font-family: var(--font-body); font-style: italic;
+      font-size: var(--small-size); border-radius: 2px;
+      z-index: 10000; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease; white-space: nowrap;
+    }
+    .edit-banner.active { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="progress-bar" id="progressBar"></div>
+  <nav class="nav-dots" id="navDots" aria-label="Slide navigation"></nav>
+
+  <!-- ============================================
+       SLIDE 1 — TITLE
+       ============================================ -->
+  <section class="slide title-slide" id="slide-1">
+    <div class="inner">
+      <p class="section-label reveal">BYU Agent Engineering</p>
+      <div class="ornament-row reveal">
+        <span class="line"></span>
+        <span class="diamond">✦</span>
+        <span class="line"></span>
+      </div>
+      <h1 class="display-title reveal">Running Local AI<br>with Ollama</h1>
+      <div class="crimson-rule reveal"></div>
+      <p class="italic-sub reveal" style="margin-top: clamp(0.6rem,1.4vw,1.1rem);">Download, configure, and benchmark local language models — no cloud required.</p>
+      <div class="title-footer reveal">
+        <span class="line"></span>
+        <span>Phishing Detection Benchmark</span>
+        <span class="line"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SLIDE 2 — WHAT IS OLLAMA?
+       ============================================ -->
+  <section class="slide" id="slide-2">
+    <div class="slide-content">
+      <div class="content-inner">
+        <p class="section-label reveal">What is Ollama?</p>
+        <h2 class="slide-heading reveal">A runtime for local language models</h2>
+        <div class="ornament-row reveal">
+          <span class="line"></span>
+          <span class="diamond">✦</span>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="fc-title">Local Inference</div>
+            <div class="fc-body">Models run entirely on your machine — no API calls, no latency surprises, no per-token fees.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-title">Privacy First</div>
+            <div class="fc-body">Your prompts and data never leave your device. Ideal for sensitive research data.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-title">Works Offline</div>
+            <div class="fc-body">Once models are pulled, the server runs without any internet connection whatsoever.</div>
+          </div>
+          <div class="feature-card">
+            <div class="fc-title">Open Source</div>
+            <div class="fc-body">Free forever. Hundreds of models on <em>ollama.com/library</em> — Llama, Mistral, Phi, Gemma, and more.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SLIDE 3 — INSTALLATION
+       ============================================ -->
+  <section class="slide" id="slide-3">
+    <div class="slide-content">
+      <div class="content-inner">
+        <p class="section-label reveal">Setup</p>
+        <h2 class="slide-heading reveal">Installing Ollama</h2>
+        <div class="steps-list">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>
+              <div class="step-title">Download Ollama</div>
+              <div class="step-desc">Visit <strong>ollama.com/download</strong> — native installers for Windows, macOS &amp; Linux. No dependencies required.</div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>
+              <div class="step-title">Verify Installation</div>
+              <div class="step-desc">Open a terminal and confirm Ollama is on your PATH.</div>
+              <div class="code-block">$ ollama <span class="key">--version</span>
+<span class="comment">→  ollama version 0.x.x</span></div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div>
+              <div class="step-title">Server Starts Automatically</div>
+              <div class="step-desc">Ollama launches a local REST API at <code>http://localhost:11434</code> — no extra configuration needed.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SLIDE 4 — PULLING MODELS
+       ============================================ -->
+  <section class="slide" id="slide-4">
+    <div class="slide-content">
+      <div class="content-inner" style="max-width: min(92vw, 920px);">
+        <p class="section-label reveal">Models</p>
+        <h2 class="slide-heading reveal">Pulling the Benchmark Models</h2>
+        <div class="model-grid">
+          <div class="model-card">
+            <div class="model-size">2 GB</div>
+            <div class="model-name">llama3.2</div>
+            <div class="model-maker">Meta</div>
+            <div class="model-cmd"><code>ollama pull llama3.2</code></div>
+          </div>
+          <div class="model-card">
+            <div class="model-size">4 GB</div>
+            <div class="model-name">mistral</div>
+            <div class="model-maker">Mistral AI</div>
+            <div class="model-cmd"><code>ollama pull mistral</code></div>
+          </div>
+          <div class="model-card">
+            <div class="model-size">2 GB</div>
+            <div class="model-name">phi3</div>
+            <div class="model-maker">Microsoft</div>
+            <div class="model-cmd"><code>ollama pull phi3</code></div>
+          </div>
+          <div class="model-card">
+            <div class="model-size">5 GB</div>
+            <div class="model-name">gemma2</div>
+            <div class="model-maker">Google</div>
+            <div class="model-cmd"><code>ollama pull gemma2</code></div>
+          </div>
+        </div>
+        <p class="models-footer reveal">Verify all models are ready → <code>ollama list</code></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SLIDE 5 — HOW THE CODE WORKS
+       ============================================ -->
+  <section class="slide" id="slide-5">
+    <div class="slide-content">
+      <div class="content-inner" style="max-width: min(94vw, 960px);">
+        <p class="section-label reveal">Workflow</p>
+        <h2 class="slide-heading reveal">The Benchmark Pipeline</h2>
+        <div class="pipeline">
+          <div class="pipe-step">
+            <div class="pipe-num">1</div>
+            <div class="pipe-card">
+              <div class="pipe-title">Configure</div>
+              <div class="pipe-desc">Edit <code>OLLAMA_MODELS</code> list in <code>generate_config.py</code></div>
+            </div>
+          </div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">
+            <div class="pipe-num">2</div>
+            <div class="pipe-card">
+              <div class="pipe-title">Generate</div>
+              <div class="pipe-desc"><code>python generate_config.py</code> writes <code>promptfoo.yaml</code></div>
+            </div>
+          </div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">
+            <div class="pipe-num">3</div>
+            <div class="pipe-card">
+              <div class="pipe-title">Evaluate</div>
+              <div class="pipe-desc"><code>promptfoo eval</code> runs all tests across every model</div>
+            </div>
+          </div>
+          <div class="pipe-arrow">→</div>
+          <div class="pipe-step">
+            <div class="pipe-num">4</div>
+            <div class="pipe-card">
+              <div class="pipe-title">Review</div>
+              <div class="pipe-desc"><code>promptfoo view</code> opens the results dashboard</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SLIDE 6 — INSIDE THE CODE
+       ============================================ -->
+  <section class="slide code-slide" id="slide-6">
+    <div class="slide-content">
+      <div class="content-inner">
+        <p class="section-label reveal">Code Walkthrough</p>
+        <h2 class="slide-heading reveal">Key Configuration</h2>
+        <div class="code-block reveal">
+<span class="key">OLLAMA_MODELS</span> = [
+    <span class="comment">"ollama:chat:llama3.2"</span>, <span class="comment">"ollama:chat:mistral"</span>,
+    <span class="comment">"ollama:chat:phi3"</span>,    <span class="comment">"ollama:chat:gemma2"</span>,
+]
+<span class="key">NUM_PHISHING</span>    = 5   <span class="comment"># emails sampled per run</span>
+<span class="key">NUM_LEGITIMATE</span>  = 5
+<span class="key">RANDOM_SEED</span>     = 42  <span class="comment"># deterministic sampling</span></div>
+        <div class="assertion-card reveal" style="margin-top: clamp(0.5rem, 1.4vw, 1.1rem);">
+          <div class="ac-label">Classification Check</div>
+          <div class="ac-desc">Response must <em>start with</em> <code>phishing</code> or <code>legitimate</code> after stripping leading punctuation — prevents preamble mismatches.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SLIDE 7 — PROS
+       ============================================ -->
+  <section class="slide" id="slide-7">
+    <div class="slide-content">
+      <div class="content-inner">
+        <p class="section-label reveal">Strengths</p>
+        <h2 class="slide-heading reveal">What Ollama Does Well</h2>
+        <ul class="verdict-list">
+          <li>
+            <span class="verdict-mark pro">✓</span>
+            <div>
+              <div class="item-title">Complete Privacy</div>
+              <div class="item-desc">Runs entirely on your machine — prompts and data never reach an external server.</div>
+            </div>
+          </li>
+          <li>
+            <span class="verdict-mark pro">✓</span>
+            <div>
+              <div class="item-title">Free Inference</div>
+              <div class="item-desc">No API costs, no usage limits, no rate throttling — run as many evaluations as you need.</div>
+            </div>
+          </li>
+          <li>
+            <span class="verdict-mark pro">✓</span>
+            <div>
+              <div class="item-title">Works Offline</div>
+              <div class="item-desc">Perfect for air-gapped environments, travel, or unreliable internet.</div>
+            </div>
+          </li>
+          <li>
+            <span class="verdict-mark pro">✓</span>
+            <div>
+              <div class="item-title">Easy Model Switching</div>
+              <div class="item-desc">One line in <code>OLLAMA_MODELS</code> swaps the entire model — re-run the benchmark in minutes.</div>
+            </div>
+          </li>
+          <li>
+            <span class="verdict-mark pro">✓</span>
+            <div>
+              <div class="item-title">Vast Model Library</div>
+              <div class="item-desc">Hundreds of models on <em>ollama.com/library</em> — Llama, Mistral, Phi, Gemma, Qwen, and more.</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       SLIDE 8 — CONS
+       ============================================ -->
+  <section class="slide" id="slide-8">
+    <div class="slide-content">
+      <div class="content-inner">
+        <p class="section-label reveal">Limitations</p>
+        <h2 class="slide-heading reveal">Limitations to Know</h2>
+        <ul class="verdict-list">
+          <li>
+            <span class="verdict-mark con">✗</span>
+            <div>
+              <div class="item-title">Hardware Requirements</div>
+              <div class="item-desc">8 GB+ RAM for small models; 16 GB+ for Mistral and Gemma. GPU acceleration (CUDA/Metal) is strongly recommended.</div>
+            </div>
+          </li>
+          <li>
+            <span class="verdict-mark con">✗</span>
+            <div>
+              <div class="item-title">Capability Gap</div>
+              <div class="item-desc">Local 7B–13B models consistently lag behind GPT-4o on complex reasoning and nuanced classification tasks.</div>
+            </div>
+          </li>
+          <li>
+            <span class="verdict-mark con">✗</span>
+            <div>
+              <div class="item-title">Large Downloads</div>
+              <div class="item-desc">Each model is 2–5 GB — all four benchmark models together require ~13 GB of disk space.</div>
+            </div>
+          </li>
+          <li>
+            <span class="verdict-mark con">✗</span>
+            <div>
+              <div class="item-title">Slower Cold Start</div>
+              <div class="item-desc">First inference after loading a model is noticeably slower than cloud APIs; expect several seconds before the first token.</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- === INLINE EDITING UI === -->
+  <div class="edit-hotzone" id="editHotzone"></div>
+  <button class="edit-toggle" id="editToggle" title="Edit mode (E)">✏ Edit</button>
+  <div class="edit-banner" id="editBanner">Edit mode — click any text to edit &nbsp;·&nbsp; Ctrl+S to save</div>
+
+  <script>
+    /* ===================================================
+       SLIDE PRESENTATION CONTROLLER
+       =================================================== */
+    class SlidePresentation {
+      constructor() {
+        this.slides = Array.from(document.querySelectorAll('.slide'));
+        this.currentSlide = 0;
+        this.progressBar = document.getElementById('progressBar');
+        this.dots = [];
+        this.init();
+      }
+
+      init() {
+        this.setupNavDots();
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
+        this.setupWheelNav();
+        this.slides[0].classList.add('visible');
+        this.updateUI();
+      }
+
+      setupIntersectionObserver() {
+        const observer = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              this.currentSlide = this.slides.indexOf(entry.target);
+              this.updateUI();
+            }
+          });
+        }, { threshold: 0.5 });
+        this.slides.forEach(s => observer.observe(s));
+      }
+
+      setupKeyboardNav() {
+        document.addEventListener('keydown', e => {
+          if (e.target.getAttribute('contenteditable')) return;
+          if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+            e.preventDefault(); this.goTo(this.currentSlide + 1);
+          }
+          if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
+            e.preventDefault(); this.goTo(this.currentSlide - 1);
+          }
+        });
+      }
+
+      setupTouchNav() {
+        let startY = 0, startX = 0;
+        document.addEventListener('touchstart', e => {
+          startY = e.touches[0].clientY; startX = e.touches[0].clientX;
+        }, { passive: true });
+        document.addEventListener('touchend', e => {
+          const dy = startY - e.changedTouches[0].clientY;
+          const dx = startX - e.changedTouches[0].clientX;
+          if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 40) {
+            this.goTo(this.currentSlide + (dy > 0 ? 1 : -1));
+          }
+        });
+      }
+
+      setupWheelNav() {
+        let last = 0;
+        document.addEventListener('wheel', e => {
+          const now = Date.now();
+          if (now - last < 900) return;
+          last = now;
+          this.goTo(this.currentSlide + (e.deltaY > 0 ? 1 : -1));
+        }, { passive: true });
+      }
+
+      setupNavDots() {
+        const nav = document.getElementById('navDots');
+        nav.innerHTML = '';
+        this.slides.forEach((_, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'nav-dot';
+          btn.setAttribute('aria-label', `Go to slide ${i + 1}`);
+          btn.addEventListener('click', () => this.goTo(i));
+          nav.appendChild(btn);
+        });
+        this.dots = Array.from(nav.querySelectorAll('.nav-dot'));
+      }
+
+      goTo(index) {
+        const i = Math.max(0, Math.min(this.slides.length - 1, index));
+        this.slides[i].scrollIntoView({ behavior: 'smooth' });
+      }
+
+      updateUI() {
+        const pct = this.slides.length > 1 ? (this.currentSlide / (this.slides.length - 1)) * 100 : 100;
+        if (this.progressBar) this.progressBar.style.width = pct + '%';
+        this.dots.forEach((d, i) => d.classList.toggle('active', i === this.currentSlide));
+      }
+    }
+
+    /* ===================================================
+       INLINE EDITOR
+       =================================================== */
+    class InlineEditor {
+      constructor() {
+        this.isActive = false;
+        this.toggle = document.getElementById('editToggle');
+        this.hotzone = document.getElementById('editHotzone');
+        this.banner = document.getElementById('editBanner');
+        this.hideTimeout = null;
+        this.editables = [];
+        this.editableSelectors = [
+          '.section-label', '.slide-heading', '.display-title',
+          '.italic-sub', '.fc-title', '.fc-body', '.step-title', '.step-desc',
+          '.pipe-title', '.pipe-desc', '.item-title', '.item-desc',
+          '.ac-label', '.ac-desc', '.model-maker', '.models-footer'
+        ].join(',');
+        this.setupHover();
+        this.setupKeyboard();
+        this.setupSave();
+      }
+
+      setupHover() {
+        /* JS-based hover with 400ms grace period — do NOT use CSS ~ sibling selector */
+        this.hotzone.addEventListener('mouseenter', () => {
+          clearTimeout(this.hideTimeout);
+          this.toggle.classList.add('show');
+        });
+        this.hotzone.addEventListener('mouseleave', () => {
+          this.hideTimeout = setTimeout(() => {
+            if (!this.isActive) this.toggle.classList.remove('show');
+          }, 400);
+        });
+        this.toggle.addEventListener('mouseenter', () => clearTimeout(this.hideTimeout));
+        this.toggle.addEventListener('mouseleave', () => {
+          this.hideTimeout = setTimeout(() => {
+            if (!this.isActive) this.toggle.classList.remove('show');
+          }, 400);
+        });
+        this.hotzone.addEventListener('click', () => this.toggleEditMode());
+        this.toggle.addEventListener('click', () => this.toggleEditMode());
+      }
+
+      setupKeyboard() {
+        document.addEventListener('keydown', e => {
+          if ((e.key === 'e' || e.key === 'E') && !e.target.getAttribute('contenteditable')) {
+            this.toggleEditMode();
+          }
+        });
+      }
+
+      setupSave() {
+        document.addEventListener('keydown', e => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            if (this.isActive) this.exportFile();
+          }
+        });
+      }
+
+      toggleEditMode() {
+        this.isActive = !this.isActive;
+        document.body.classList.toggle('edit-active', this.isActive);
+        this.toggle.classList.toggle('active', this.isActive);
+        this.toggle.textContent = this.isActive ? '✓ Done' : '✏ Edit';
+        this.banner.classList.toggle('active', this.isActive);
+
+        if (this.isActive) {
+          this.editables = Array.from(document.querySelectorAll(this.editableSelectors));
+          this.editables.forEach(el => el.setAttribute('contenteditable', 'true'));
+        } else {
+          this.editables.forEach(el => el.removeAttribute('contenteditable'));
+          this.editables = [];
+        }
+      }
+
+      exportFile() {
+        /* Strip edit state so the saved file opens cleanly (no edit-mode artifacts) */
+        const editables = Array.from(document.querySelectorAll('[contenteditable]'));
+        editables.forEach(el => el.removeAttribute('contenteditable'));
+        document.body.classList.remove('edit-active');
+        this.toggle.classList.remove('active', 'show');
+        this.banner.classList.remove('active');
+
+        const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+        /* Restore edit state */
+        document.body.classList.add('edit-active');
+        editables.forEach(el => el.setAttribute('contenteditable', 'true'));
+        this.toggle.classList.add('active');
+        this.banner.classList.add('active');
+
+        const blob = new Blob([html], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'ollama-slides.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+    }
+
+    /* Boot */
+    new SlidePresentation();
+    new InlineEditor();
+  </script>
+</body>
+</html>

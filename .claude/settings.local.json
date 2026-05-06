@@ -17,7 +17,14 @@
       "Bash(pip install *)",
       "Bash(grep -E \"\\\\.\\(md|txt\\)$\")",
       "Bash(Get-ChildItem -Recurse -Force)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(curl -s https://gandalf-api.lakera.ai/api/agent-ctf/levels -H \"Authorization: Bearer agent_ctf_v8Q8-aWzxrwPy0kAXGTZv2xiRPLEjSqk32ZsAp7iVcw\")",
+      "Bash(curl -s -X POST https://gandalf-api.lakera.ai/api/agent-ctf/levels/1/guess -H \"Authorization: Bearer agent_ctf_479F0iGNzdI_EmJA5WTczS_l9FxoMMn_zBs3hcYEes0\" -H \"Content-Type: application/json\" -d '{\"secret\": \"COCOLOCO\"}')",
+      "Bash(Get-Content \"C:\\\\Users\\\\jcdah\\\\.claude\\\\plugins\\\\cache\\\\frontend-slides\\\\frontend-slides\\\\1.0.0\\\\skills\\\\frontend-slides\\\\SKILL.md\" -Raw)",
+      "Bash(Select-Object -First 100)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\jcdah\\\\.claude\\\\plugins\\\\cache\\\\frontend-slides\\\\\" -Recurse | Where-Object { $_.Name -eq \"SKILL.md\" -and $_.Length -gt 10 })",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\jcdah\\\\.claude\\\\plugins\\\\cache\\\\frontend-slides\\\\\" -Recurse -Filter \"SKILL.md\" | ForEach-Object { Write-Host \"$\\($_.FullName\\) - Size: $\\($_.Length\\)\" })",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\jcdah\\\\.claude\\\\plugins\\\\\" -Recurse -Filter \"SKILL.md\" | ForEach-Object { Write-Host \"$\\($_.FullName\\) - Size: $\\($_.Length\\)\" })"
     ]
   }
 }
