@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Engineering — Meeting 1 Update</title>
+  <style>
+    /* ── Variables ──────────────────────────────────────────────────────── */
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --teal:      #1fb8cd;
+      --teal-dim:  #0f7a8a;
+      --green:     #3fb950;
+      --yellow:    #d29922;
+      --red:       #f85149;
+      --purple:    #a371f7;
+      --blue:      #58a6ff;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --radius:    12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Slide container ────────────────────────────────────────────────── */
+    #deck {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 48px 64px;
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      pointer-events: none;
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: all;
+    }
+
+    .slide.exit-left {
+      opacity: 0;
+      transform: translateX(-60px);
+    }
+
+    /* ── Typography ─────────────────────────────────────────────────────── */
+    h1 { font-size: 3rem; font-weight: 700; line-height: 1.1; }
+    h2 { font-size: 2rem; font-weight: 700; margin-bottom: 24px; color: var(--teal); }
+    h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 10px; }
+    p  { line-height: 1.7; color: var(--muted); font-size: 1.05rem; }
+    .accent { color: var(--teal); }
+    .subtitle { font-size: 1.3rem; color: var(--muted); margin-top: 16px; }
+    .tag {
+      display: inline-block;
+      background: var(--teal-dim);
+      color: var(--teal);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    a { color: var(--teal); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Cards ──────────────────────────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      gap: 16px;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .card-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+    .card.highlight { border-color: var(--teal); }
+    .card h3 { color: var(--text); }
+    .card p  { font-size: 0.95rem; margin-top: 6px; }
+    .card .icon { font-size: 1.8rem; margin-bottom: 8px; }
+
+    /* ── Tables ─────────────────────────────────────────────────────────── */
+    .data-table {
+      width: 100%;
+      max-width: 1100px;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    .data-table th {
+      background: var(--teal-dim);
+      color: var(--text);
+      padding: 10px 16px;
+      text-align: left;
+      font-weight: 600;
+    }
+    .data-table td {
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      vertical-align: top;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: var(--surface); color: var(--text); }
+    code {
+      background: #1f2937;
+      color: var(--teal);
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.85em;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── Code block ──────────────────────────────────────────────────────── */
+    pre.code-block {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      width: 100%;
+      max-width: 900px;
+      color: var(--text);
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.85rem;
+      line-height: 1.55;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    pre.code-block code {
+      background: transparent;
+      color: var(--text);
+      padding: 0;
+      font-size: inherit;
+    }
+
+    /* ── Feature chips ──────────────────────────────────────────────────── */
+    .feature-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      max-width: 1000px;
+    }
+    .feature-chip {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 0.88rem;
+      text-align: center;
+      min-width: 180px;
+    }
+    .feature-chip .chip-title { color: var(--teal); font-weight: 600; font-size: 0.93rem; }
+    .feature-chip .chip-desc  { color: var(--muted); font-size: 0.82rem; margin-top: 4px; }
+
+    /* ── Compare two columns ────────────────────────────────────────────── */
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .compare-col {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+    .compare-col h3 { color: var(--teal); margin-bottom: 12px; }
+    .compare-col ul { padding-left: 18px; color: var(--muted); font-size: 0.92rem; }
+    .compare-col ul li { padding: 4px 0; line-height: 1.5; }
+
+    /* ── Use-case strip ─────────────────────────────────────────────────── */
+    .use-case {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--teal);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+    }
+    .use-case h3 { color: var(--text); font-size: 1rem; }
+    .use-case p  { font-size: 0.9rem; margin-top: 6px; }
+
+    /* ── Image styling ──────────────────────────────────────────────────── */
+    .img-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      max-width: 1100px;
+    }
+    .img-row img {
+      max-height: 320px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .img-caption { color: var(--muted); font-size: 0.82rem; text-align: center; margin-top: 6px; }
+
+    /* ── Title slide ─────────────────────────────────────────────────────── */
+    #slide-title { text-align: center; gap: 0; }
+    .title-logo { font-size: 4rem; margin-bottom: 24px; }
+    .byline { margin-top: 32px; color: var(--muted); font-size: 0.95rem; }
+
+    /* ── Slide layout helpers ───────────────────────────────────────────── */
+    .slide-content {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+    }
+    .slide-header { text-align: center; margin-bottom: 8px; }
+
+    /* ── Link list ──────────────────────────────────────────────────────── */
+    .link-list {
+      list-style: none;
+      padding: 0;
+      width: 100%;
+      max-width: 950px;
+    }
+    .link-list li {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--teal);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 10px;
+    }
+    .link-list .link-title { color: var(--text); font-weight: 600; font-size: 0.98rem; }
+    .link-list .link-url   { color: var(--muted); font-size: 0.78rem; word-break: break-all; display: block; margin-top: 4px; }
+
+    /* ── Navigation ─────────────────────────────────────────────────────── */
+    #nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 14px 24px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .nav-btn:hover { background: var(--teal-dim); border-color: var(--teal); }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    #slide-counter { color: var(--muted); font-size: 0.9rem; min-width: 80px; text-align: center; }
+    .dot-row { display: flex; gap: 6px; flex-wrap: wrap; max-width: 600px; justify-content: center; }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .dot.active { background: var(--teal); }
+
+    .kbd-hint {
+      position: fixed;
+      bottom: 70px;
+      right: 20px;
+      color: var(--border);
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+<div id="deck">
+
+  <!-- ════════════════════════ SLIDE 1: TITLE ════════════════════════════ -->
+  <div class="slide active" id="slide-title">
+    <div class="title-logo">🤖</div>
+    <div class="tag">BYU Agent Engineering</div>
+    <h1>Meeting 1<br><span class="accent">Update</span></h1>
+    <p class="subtitle">A tour of what I've been exploring</p>
+    <p class="byline">TA: Joey Dahlke<br>Topics: Frameworks · ARC-AGI-3 · Orbit Wars · Local hosting · PromptFoo · Skills · Gandalf</p>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 2: AGENDA ═══════════════════════════ -->
+  <div class="slide" id="slide-agenda">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Agenda</div>
+        <h2>What I've Been Doing</h2>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-chip"><div class="chip-title">Agent Frameworks</div><div class="chip-desc">6 SDKs, same pipeline</div></div>
+        <div class="feature-chip"><div class="chip-title">SDK vs Responses API</div><div class="chip-desc">Direct comparison</div></div>
+        <div class="feature-chip"><div class="chip-title">ARC-AGI-3</div><div class="chip-desc">Played around with it</div></div>
+        <div class="feature-chip"><div class="chip-title">Kaggle: Orbit Wars</div><div class="chip-desc">Algorithmic, not agentic</div></div>
+        <div class="feature-chip"><div class="chip-title">Local Hosting</div><div class="chip-desc">Models on my machine</div></div>
+        <div class="feature-chip"><div class="chip-title">PromptFoo</div><div class="chip-desc">Eval & red-teaming</div></div>
+        <div class="feature-chip"><div class="chip-title">Skills</div><div class="chip-desc">Codex / agentskills.io</div></div>
+        <div class="feature-chip"><div class="chip-title">Agentic Gandalf</div><div class="chip-desc">7 / 8 levels cleared</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 3: FRAMEWORKS OVERVIEW ══════════════ -->
+  <div class="slide" id="slide-frameworks-overview">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Agent Frameworks</div>
+        <h2>One Pipeline, Six Frameworks</h2>
+        <p>Used Claude Code to build the <strong style="color:var(--text)">same multi-agent research pipeline</strong> in six different SDKs so students can read the same problem expressed six ways and compare the primitives.</p>
+      </div>
+      <div class="card highlight" style="max-width:1000px;text-align:center">
+        <div class="icon">🎯 → 🔍 → 📊 → ✍️ → 🧐</div>
+        <h3>Supervisor → Researcher → Analyzer → Writer → Critic</h3>
+        <p>Critic loops back to Writer until quality threshold is met or <code>max_iterations</code> is hit. The behavior is identical across frameworks; the <strong style="color:var(--teal)">APIs, state model, and orchestration patterns are deliberately different</strong>.</p>
+      </div>
+      <div class="card-grid cols-3" style="max-width:1000px">
+        <div class="card"><div class="icon">📦</div><h3>Same problem</h3><p>Identical pipeline shape, identical role names, identical end output.</p></div>
+        <div class="card"><div class="icon">🔧</div><h3>Different primitives</h3><p>State carriers, edge wiring, and HITL look completely different in each framework.</p></div>
+        <div class="card"><div class="icon">📚</div><h3>Side-by-side reading</h3><p>Each subdir is self-contained — students can diff one framework against another to see the trade-offs.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 4: FRAMEWORK COMPARISON ═════════════ -->
+  <div class="slide" id="slide-frameworks-compare">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Comparison</div>
+        <h2>Six Frameworks, Side by Side</h2>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Framework</th>
+            <th>Orchestration pattern</th>
+            <th>State carrier</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color:var(--teal)">OpenAI Agents SDK</strong></td>
+            <td>Handoff tools + <code>agent.clone()</code> for circular Critic↔Writer</td>
+            <td><code>ResearchContext</code> dataclass via <code>RunContextWrapper[T]</code></td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--teal)">Pydantic AI</strong></td>
+            <td>Imperative composition (<code>await</code> each agent like a function)</td>
+            <td><code>ResearchDependencies</code> via <code>deps=</code> + <code>message_history=</code></td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--teal)">LangGraph</strong></td>
+            <td><code>StateGraph</code> + conditional edges + <code>interrupt()</code> HITL + <code>MemorySaver</code></td>
+            <td><code>ResearchState</code> TypedDict with <code>Annotated</code> reducers</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--teal)">LlamaIndex</strong></td>
+            <td>Event-driven <code>Workflow</code> — <code>@step</code> methods routed by typed <code>Event</code></td>
+            <td><code>Context</code> + RAG index built from web chunks</td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--teal)">CrewAI</strong></td>
+            <td><code>Process.hierarchical</code> (auto manager) + <code>@start/@listen/@router</code> Flow</td>
+            <td><code>Crew</code> internal memory (short / long / entity) + Flow <code>state</code></td>
+          </tr>
+          <tr>
+            <td><strong style="color:var(--teal)">Microsoft Agent Framework</strong></td>
+            <td>Handoff mesh (hub-and-spoke) + <code>MaxIterationsMiddleware</code> + approval HITL</td>
+            <td>Plain dict closed over by handoff tools</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.85rem;text-align:center;margin-top:6px">All six implemented under <code>Agent_Frameworks/</code> — each ships its own <code>runner.py</code>, README, and presentation deck.</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 5: SDK vs RESPONSES API ═════════════ -->
+  <div class="slide" id="slide-sdk-vs-responses">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Direct Comparison</div>
+        <h2>OpenAI Agents SDK vs <code>client.responses</code></h2>
+        <p>Same task, two abstraction levels. The SDK trades hand-rolled control for batteries-included orchestration.</p>
+      </div>
+      <div class="compare-grid">
+        <div class="compare-col" style="border-color:var(--muted)">
+          <h3 style="color:var(--blue)">In-class pattern: <code>client.responses</code></h3>
+          <ul>
+            <li>Raw <code>client.responses.create()</code> in a manual loop</li>
+            <li>You inspect <code>response.output</code> and dispatch tool calls yourself</li>
+            <li>Conversation history threaded by hand (<code>previous_response_id</code> or list of items)</li>
+            <li>Multi-agent routing = your own <code>if/elif</code> over outputs</li>
+            <li>Streaming = iterate raw event chunks</li>
+            <li>You own retries, errors, guardrails, and tracing</li>
+          </ul>
+        </div>
+        <div class="compare-col" style="border-color:var(--teal)">
+          <h3 style="color:var(--teal)">Agents SDK: <code>Agent</code> + <code>Runner</code></h3>
+          <ul>
+            <li><code>Agent(name, instructions, tools, handoffs)</code> declarative spec</li>
+            <li><code>Runner.run(agent, input)</code> handles the loop</li>
+            <li>Handoffs / <code>agent.clone()</code> wire multi-agent routing</li>
+            <li>Sessions: <code>AsyncSQLiteSession</code>, <code>OpenAIConversationsSession</code>, <code>previous_response_id</code></li>
+            <li><code>Runner.run_streamed</code> + typed events out of the box</li>
+            <li>Built-in guardrails, hooks, tracing, structured output</li>
+          </ul>
+        </div>
+      </div>
+      <p style="font-size:0.85rem;text-align:center">References: <code>OpenAI_Agents_Comparison.ipynb</code> · <code>agents_chat_demo.py</code> (Gradio demo of all four session strategies)</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 6: ARC-AGI-3 ════════════════════════ -->
+  <div class="slide" id="slide-arc">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Benchmarks</div>
+        <h2>ARC-AGI-3</h2>
+        <p>Played around with it briefly — interactive reasoning benchmark from the ARC Prize team. Had some trouble with the local setup, so this was more reconnaissance than implementation.</p>
+      </div>
+      <div class="img-row">
+        <div style="text-align:center">
+          <img src="https://arcprize.org/media/images/arc-agi-3-1.png" alt="ARC-AGI-3 task example" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+          <div style="display:none;padding:60px;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);color:var(--muted);font-size:0.85rem">[ARC-AGI-3 image — load failed]</div>
+          <div class="img-caption">Source: arcprize.org</div>
+        </div>
+        <div style="text-align:center">
+          <img src="https://arcprize.org/media/images/arc-agi-3-preview.png" alt="ARC-AGI-3 preview" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+          <div style="display:none;padding:60px;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);color:var(--muted);font-size:0.85rem">[ARC-AGI-3 preview — load failed]</div>
+          <div class="img-caption">Source: arcprize.org</div>
+        </div>
+      </div>
+      <div class="card" style="max-width:900px">
+        <h3>Takeaway</h3>
+        <p>ARC-AGI-3 raises the bar over ARC-AGI-2: tasks are interactive (multi-step actions) rather than single grid transformations. Setup friction kept me from getting a real agent running this round — worth revisiting.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 7: ORBIT WARS ═══════════════════════ -->
+  <div class="slide" id="slide-orbit-wars">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Kaggle</div>
+        <h2>Orbit Wars</h2>
+      </div>
+      <div class="card-grid cols-2" style="max-width:1000px">
+        <div class="card">
+          <div class="icon">🛰️</div>
+          <h3>What it is</h3>
+          <p>Kaggle competition centered on orbital simulation / strategy. Submissions are <strong style="color:var(--text)">algorithmic strategies</strong>, not live agents.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🚫</div>
+          <h3>Why it's not really agent engineering</h3>
+          <p>You're not allowed to submit AI agents. AI is only used <em>at authoring time</em> — to help write the algorithms and strategies that get submitted.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🧠</div>
+          <h3>Where AI fits</h3>
+          <p>Use models to brainstorm strategies, write/refine the simulation code, and analyze opponent behavior — but the runtime is plain code.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🎓</div>
+          <h3>Course relevance</h3>
+          <p>Limited as a teaching artifact for agent engineering specifically. Better positioned as an "AI-assisted programming" example.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 8: LOCAL HOSTING ════════════════════ -->
+  <div class="slide" id="slide-local">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Local Hosting</div>
+        <h2>Models on My Machine</h2>
+      </div>
+      <div class="card highlight" style="max-width:900px;text-align:center">
+        <div class="icon">💻</div>
+        <h3>Quick spin-up</h3>
+        <p>Briefly tried <strong style="color:var(--text)">running a couple of local models</strong> via Ollama on my dev machine. Goal was to get a feel for latency, footprint, and quality at home before throwing them at a benchmark.</p>
+      </div>
+      <div class="card-grid cols-3" style="max-width:1000px">
+        <div class="card"><h3 style="color:var(--teal)">Why try it</h3><p>No API costs, full control, offline-capable, useful for red-teaming / sensitive eval data.</p></div>
+        <div class="card"><h3 style="color:var(--teal)">What worked</h3><p>Small models load fast and answer fine for narrow classification tasks.</p></div>
+        <div class="card"><h3 style="color:var(--teal)">Where it goes next</h3><p>Feed local models into PromptFoo (next slide) for a real comparison.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 9: PROMPTFOO ════════════════════════ -->
+  <div class="slide" id="slide-promptfoo">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Evaluation</div>
+        <h2>PromptFoo</h2>
+        <p>Open-source eval framework — three pillars in one tool.</p>
+      </div>
+      <div class="card-grid cols-3" style="max-width:1000px">
+        <div class="card highlight">
+          <div class="icon">📝</div>
+          <h3>Prompt eval</h3>
+          <p>Compare prompt variants on a fixed model with the same dataset and graders.</p>
+        </div>
+        <div class="card highlight">
+          <div class="icon">⚖️</div>
+          <h3>Model eval</h3>
+          <p>Hold the prompt fixed, vary the model — apples-to-apples quality / latency / cost.</p>
+        </div>
+        <div class="card highlight">
+          <div class="icon">🔥</div>
+          <h3>Red teaming</h3>
+          <p>Adversarial probes for jailbreaks, prompt injection, PII leakage, harmful output.</p>
+        </div>
+      </div>
+      <div class="card" style="max-width:900px;border-left:4px solid var(--teal)">
+        <h3>What I used it for</h3>
+        <p>Spam / phishing email classification across several local Ollama models. Edit <code>OLLAMA_MODELS</code> in <code>generate_config.py</code> → write <code>promptfoo.yaml</code> → <code>promptfoo eval</code>. Lives under <code>ollama/</code> and is independent of <code>Agent_Frameworks/</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 10: SKILLS ══════════════════════════ -->
+  <div class="slide" id="slide-skills">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Skills</div>
+        <h2>OpenAI / Codex Skills</h2>
+        <p>Manually wired up skills for Codex. Skills are small, model-callable capabilities packaged with metadata + references.</p>
+      </div>
+      <pre class="code-block"><code>openai_skill_tester/
+├── .codex/
+│   └── skills/
+│       ├── html-slides/
+│       │   ├── SKILL.md              ← name, description, instructions
+│       │   └── references/
+│       │       ├── design-principles.md
+│       │       └── slide-scripts.md
+│       └── python-writer/
+│           ├── SKILL.md
+│           └── references/
+│               └── quotes.md
+└── math_functions.py                 ← plain Python tool functions</code></pre>
+      <div class="card" style="max-width:900px;border-left:4px solid var(--teal)">
+        <h3>Standardized skill spec</h3>
+        <p>Found <a href="https://agentskills.io/" target="_blank" rel="noopener">agentskills.io</a> — proposed standard for sharing skills across agent runtimes (OpenAI Codex, Anthropic Claude, etc.). Frontmatter <code>name</code> + <code>description</code> in <code>SKILL.md</code> drives auto-discovery.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 11: AGENTIC GANDALF ═════════════════ -->
+  <div class="slide" id="slide-gandalf">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">CTF</div>
+        <h2>Agentic Gandalf</h2>
+        <p>Used the <code>gandalf-ctf</code> skill to drive Claude Code through Lakera's prompt-security CTF. Each level guards a secret password under increasingly aggressive defenses.</p>
+      </div>
+      <div class="card highlight" style="max-width:700px;text-align:center">
+        <div class="icon">🧙‍♂️ → 🔓</div>
+        <h3 style="color:var(--green)">7 / 8 levels cleared</h3>
+        <p>Claude Code, given the skill, beat seven of the eight Gandalf challenges autonomously — chaining prompt-injection strategies and adapting to defender responses without user intervention.</p>
+      </div>
+      <div class="card-grid cols-3" style="max-width:1000px">
+        <div class="card"><h3 style="color:var(--teal)">Why it's interesting</h3><p>It's a clean test of whether a skill-equipped agent can <em>autonomously</em> attack a defender it's never seen before.</p></div>
+        <div class="card"><h3 style="color:var(--teal)">What broke down</h3><p>Final level uses layered defenses (input filter + output filter + LLM judge). One-shot strategies stop working.</p></div>
+        <div class="card"><h3 style="color:var(--teal)">Course angle</h3><p>Pairs with the PromptFoo red-teaming pillar — same threat model, opposite side of the table.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 12: NEXT STEPS ══════════════════════ -->
+  <div class="slide" id="slide-next">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Next Steps</div>
+        <h2>What I Want to Explore Next</h2>
+      </div>
+      <div class="card-grid cols-3" style="max-width:1000px">
+        <div class="card highlight">
+          <div class="icon">🧪</div>
+          <h3>PromptFoo (deeper)</h3>
+          <p>Move beyond model eval into structured prompt eval workflows and real red-teaming runs against course-relevant agents.</p>
+        </div>
+        <div class="card highlight">
+          <div class="icon">🖱️</div>
+          <h3>Computer Use Tool</h3>
+          <p>Anthropic's screen-controlling tool — see how it slots into the agent stack and what tasks it unlocks vs. tool-calling alone.</p>
+        </div>
+        <div class="card highlight">
+          <div class="icon">👥</div>
+          <h3>Agent Teams</h3>
+          <p>Multi-agent team patterns (delegation, role specialization, debate) beyond what the six frameworks already demonstrate.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 13: INTERESTING READS ═══════════════ -->
+  <div class="slide" id="slide-reads">
+    <div class="slide-content">
+      <div class="slide-header">
+        <div class="tag">Reading List</div>
+        <h2>Interesting Reads</h2>
+      </div>
+      <ul class="link-list">
+        <li>
+          <a href="https://addyosmani.com/blog/cognitive-surrender/" target="_blank" rel="noopener" class="link-title">Cognitive Surrender — Addy Osmani</a>
+          <span class="link-url">addyosmani.com/blog/cognitive-surrender/</span>
+        </li>
+        <li>
+          <a href="https://medium.com/@AnalyticsAtMeta/how-we-built-an-ai-second-brain-for-60k-knowledge-workers-78c507dd795b" target="_blank" rel="noopener" class="link-title">How we built an AI second brain for 60k knowledge workers — Meta Analytics</a>
+          <span class="link-url">medium.com/@AnalyticsAtMeta/how-we-built-an-ai-second-brain-for-60k-knowledge-workers</span>
+        </li>
+        <li>
+          <a href="https://internals.laxmena.com/p/what-youre-actually-writing-when" target="_blank" rel="noopener" class="link-title">What you're actually writing when… — laxmena</a>
+          <span class="link-url">internals.laxmena.com/p/what-youre-actually-writing-when</span>
+        </li>
+        <li>
+          <a href="https://developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide" target="_blank" rel="noopener" class="link-title">OpenAI Cookbook — Image-gen models prompting guide</a>
+          <span class="link-url">developers.openai.com/cookbook/examples/multimodal/image-gen-models-prompting-guide</span>
+        </li>
+        <li>
+          <a href="https://resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf" target="_blank" rel="noopener" class="link-title">Anthropic — The Complete Guide to Building Skills for Claude (PDF)</a>
+          <span class="link-url">resources.anthropic.com/hubfs/The-Complete-Guide-to-Building-Skill-for-Claude.pdf</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ SLIDE 14: CLOSING ═════════════════════════ -->
+  <div class="slide" id="slide-close">
+    <div class="slide-content" style="text-align:center">
+      <div class="title-logo">🙌</div>
+      <div class="tag">Thanks</div>
+      <h1>Questions &amp; <span class="accent">Discussion</span></h1>
+      <p class="subtitle">Happy to dig into any of the topics — frameworks, skills, evals, or next steps.</p>
+      <p class="byline">Repo: <code>TA_Dev/Agent_Engineering_Dev/</code> · See per-framework decks under <code>Agent_Frameworks/&lt;name&gt;/presentation/</code></p>
+    </div>
+  </div>
+
+</div><!-- #deck -->
+
+<!-- Navigation -->
+<div id="nav">
+  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>← Prev</button>
+  <div class="dot-row" id="dots"></div>
+  <span id="slide-counter">1 / 14</span>
+  <button class="nav-btn" id="btn-next" onclick="navigate(1)">Next →</button>
+</div>
+
+<div class="kbd-hint">← → arrow keys to navigate</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const dotsContainer = document.getElementById('dots');
+  let current = 0;
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  });
+
+  function updateNav() {
+    document.getElementById('btn-prev').disabled = current === 0;
+    document.getElementById('btn-next').disabled = current === slides.length - 1;
+    document.getElementById('slide-counter').textContent = `${current + 1} / ${slides.length}`;
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+    });
+  }
+
+  function goTo(index) {
+    if (index === current) return;
+    const isForward = index > current;
+    slides.forEach(slide => slide.classList.remove('active', 'exit-left'));
+    if (isForward) slides[current].classList.add('exit-left');
+    current = index;
+    slides[current].classList.add('active');
+    updateNav();
+  }
+
+  function navigate(dir) {
+    const next = current + dir;
+    if (next >= 0 && next < slides.length) goTo(next);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') navigate(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                     navigate(-1);
+  });
+
+  updateNav();
+</script>
+</body>
+</html>

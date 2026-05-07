@@ -80,6 +80,7 @@ npm install -g promptfoo
 ```
 
 Or run without installing globally:
+
 ```bash
 npx promptfoo@latest eval
 ```
