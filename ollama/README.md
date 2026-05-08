@@ -9,11 +9,13 @@ Evaluate how well local Ollama models detect phishing emails using a labeled dat
 Download and install Ollama from **https://ollama.com/download** for your OS (Windows, macOS, or Linux).
 
 After installing, verify it works:
+
 ```bash
 ollama --version
 ```
 
 Ollama runs a local server at `http://localhost:11434` by default. On most platforms it starts automatically; if not, run:
+
 ```bash
 ollama serve
 ```
@@ -32,6 +34,7 @@ ollama pull gemma2             # Google Gemma 2 (~5GB)
 ```
 
 To see all downloaded models:
+
 ```bash
 ollama list
 ```
@@ -75,6 +78,7 @@ This samples 5 phishing + 5 legitimate emails from the dataset, builds 10 test c
 ## 5. Run the Benchmark
 
 Install promptfoo (requires Node.js 18+):
+
 ```bash
 npm install -g promptfoo
 ```
@@ -86,11 +90,13 @@ npx promptfoo@latest eval
 ```
 
 From this folder:
+
 ```bash
 promptfoo eval
 ```
 
 Open the results dashboard:
+
 ```bash
 promptfoo view
 ```
@@ -100,6 +106,7 @@ promptfoo view
 ## What the Benchmark Tests
 
 Each model is prompted with 10 emails and must:
+
 1. Start its response with `phishing` or `legitimate`
 2. If phishing, name the correct category from:
    `authority_scam`, `credential_harvesting`, `financial_scam`, `generic_phishing`,
@@ -109,6 +116,7 @@ Each model is prompted with 10 emails and must:
 Promptfoo checks each response against these expectations and reports a pass/fail table per model.
 
 **How grading works:**
+
 - **Classification** — the response (after stripping leading punctuation/quotes) must *start with* `phishing` or `legitimate`. This avoids false positives like "not phishing, this is legitimate".
 - **Category** — checked with a word-boundary regex, so `social_engineering` does **not** match `social_engineering_advanced`.
 
