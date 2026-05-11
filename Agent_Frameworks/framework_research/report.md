@@ -12,6 +12,7 @@
 - Coding Language
 - Has GUI
 - Includes HITL integration
+- Still adding new features?
 
 ## When to Introduce Fameworks to the Course
 

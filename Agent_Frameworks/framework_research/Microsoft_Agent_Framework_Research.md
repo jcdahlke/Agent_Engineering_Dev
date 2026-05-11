@@ -311,7 +311,7 @@ Google ADK is the most direct architectural competitor. It also supports both wo
 ### Key Metrics (as of May 2026)
 
 - **`microsoft/autogen` GitHub stars:** ~43,000+ (the predecessor framework; placed in maintenance mode but star count reflects cumulative community interest in Microsoft's multi-agent work)
-- **`microsoft/agent-framework` GitHub stars:** Growing rapidly post-1.0 GA; the repo was created in October 2025 and reached the top 10 of the AI agent frameworks GitHub ranking within six months of GA
+- **`microsoft/agent-framework` GitHub stars:** ~10,000+ (Growing rapidly post-1.0 GA; the repo was created in October 2025 and reached the top 10 of the AI agent frameworks GitHub ranking within six months of GA)
 - **`microsoft/semantic-kernel` GitHub stars:** ~28,000+ (now in maintenance mode; represents the enterprise developer community migrating to Agent Framework)
 - **PyPI downloads:** The `agent-framework` package crossed 1 million monthly downloads within the first three months of GA (April 2026)
 - **Languages supported:** Python and .NET (C#) with full feature parity
