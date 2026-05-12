@@ -333,6 +333,42 @@
 
 ---
 
+### Strands Agents
+
+**Year Released:** May 2025 (public preview); v1.0 July 2025 (by AWS)
+
+**Coding Language:** Python (primary); TypeScript SDK in development
+
+**Has GUI:** No official visual IDE or Studio interface. Observability is handled through first-class OpenTelemetry tracing forwarded to third-party dashboards (AWS CloudWatch, Langfuse, Arize AX). A community-built `strands.my` dashboard tracks ecosystem metrics but is not an authoring or debugging tool.
+
+**HITL Integration:** Yes — the `handoff_to_user` built-in tool pauses agent execution and transfers control to a human, preserving full conversation context during the handoff. The agent can also be configured to ask clarifying questions inline before continuing. More structured approval gates are available via the Graphs multi-agent primitive, which supports conditional routing with defined decision points.
+
+**Still Adding New Features:** Yes — v1.0 released July 2025, less than two months after the May 2025 preview; active development with regular releases adding model providers, community-contributed tools, MCP integrations, and ecosystem features
+
+**Summary:** Strands takes a model-driven approach — instead of you wiring up a workflow graph, the LLM drives its own agent loop. You hand it a system prompt, a list of tools, and a model; it decides what to call and when, looping until it produces a final answer. Think of it as a smart contractor: you give them the job description and a toolbox, and they figure out the sequence of steps on their own without a project manager micromanaging each decision. The framework was built internally at AWS and open-sourced in May 2025 after it had already proven itself in production on Amazon Q Developer, AWS Glue, and Kiro. Version 1.0 extended this single-agent loop into four multi-agent patterns: **Agents-as-Tools** (specialist agents callable as tools by an orchestrator), **Handoffs** (explicit control transfer with preserved context), **Swarms** (autonomous agent teams coordinating through shared memory), and **Graphs** (deterministic workflows with conditional routing). All four patterns compose freely. Key components: Agent, Tool (`@tool` decorator), Model (any of 15+ supported providers), SessionManager (durable state persistence), and AgentCore (AWS managed hosting platform).
+
+**Notable Users:**
+- **Amazon Q Developer** — internal agentic AI assistant for software development; Strands cut agent deployment time from months to days on the Q Developer team
+- **AWS Glue** — data integration and ETL pipeline agents in production
+- **VPC Reachability Analyzer** — network diagnostics agents that reason over AWS infrastructure topology
+- **Kiro (AWS IDE)** — AI-powered coding assistant with multi-step agentic task automation
+- **Amazon Transform** — application modernization at scale, using Strands to analyze and rewrite legacy codebases
+- **Accenture** — enterprise agent deployments across industries; contributed code to the Strands SDK
+- **PwC** — finance and life sciences agent workflows under a collaboration with Anthropic for regulated, mission-critical deployments
+
+**Industry Adoption:** Heaviest adoption inside the AWS ecosystem, where the zero-configuration Bedrock, IAM, and S3 integrations make Strands the default path. Production deployments span cloud infrastructure management, software development, application modernization, financial services (meeting action capture, compliance workflows), and life sciences. AWS reported 5 million+ total PyPI downloads as of early 2026, driven largely by AWS-native engineering teams. Model-agnostic design (Bedrock, Anthropic, OpenAI, Ollama, LiteLLM, Llama, and more) means it is usable beyond AWS, but the gravitational pull of the ecosystem is strong.
+
+**Community Size:** 2,000+ GitHub stars (as of July 2025 v1.0 launch); 5+ million total PyPI downloads; ~1.4 million weekly PyPI downloads as of May 2026; 22% of v1.0 pull requests contributed by community members; contributors from Accenture, Anthropic, Meta, PwC, Cohere, Mistral, Writer, Langfuse, mem0.ai, and Tavily
+
+**Why Choose This Framework:** Strands is the fastest path from zero to a working AWS-native agent. The model-driven loop eliminates the graph-definition overhead that makes LangGraph steep for prototyping, while still delivering production-grade tooling — built-in OpenTelemetry, durable session management, async support, and a clear path to Bedrock AgentCore for managed hosting. For teams already running on AWS, IAM and Bedrock connect automatically without any configuration. The A2A protocol support and MCP integration mean Strands agents can interoperate with agents built on other frameworks and tap a large ecosystem of pre-built tools immediately. Four composable multi-agent primitives cover the most common real-world patterns without forcing a choice between them.
+
+**Pricing:**
+- **Beginner:** $0 — the Strands SDK is Apache 2.0 licensed and completely free. LLM API costs (billed by your chosen model provider) are the only expense. Running locally against Bedrock or the Anthropic API: approximately $0–$20/month for testing and development.
+- **Startup:** $0 framework cost + AWS infrastructure + LLM inference. A production agent on AgentCore Runtime with moderate traffic (a few hundred sessions/day) runs approximately $100–$400/month: Runtime compute at $0.0895/vCPU-hour + $0.00945/GB-hour (charged only for active compute time), Memory operations, and LLM tokens via Bedrock. Self-hosting on Lambda or Fargate is cheaper but requires more DevOps effort.
+- **Enterprise:** Amazon Bedrock AgentCore at consumption-based rates with no minimums: Runtime compute, Gateway ($0.005/1,000 tool API calls), Memory ($0.25–$0.75/1,000 operations), and Identity. Large enterprise deployments with dozens of agents and high tool-call volumes run $5,000–$20,000+/month before LLM inference. AWS Enterprise Discount Program (EDP) agreements typically provide 20–40% discounts at scale. Pricing verified at `aws.amazon.com/bedrock/agentcore/pricing/` as of early 2026.
+
+---
+
 ## When to Introduce Fameworks to the Course
 
 Options:
