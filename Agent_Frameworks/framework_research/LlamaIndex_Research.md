@@ -256,6 +256,9 @@ LlamaIndex's llama-agents microservice architecture for distributed multi-agent 
 | **AutoGen** | Conversational multi-agent dialogue | Group chat, consensus patterns (maintenance mode) | Low-medium (20–40 min) | Medium (maintenance mode) |
 | **Google ADK** | Workflow + LLM agents, GCP-native | GCP deployments, Gemini integration | Medium (30–60 min) | Medium (growing) |
 | **OpenAI Agents SDK** | Minimal: agents, handoffs, guardrails, tools | Simple OpenAI-native agents, fast prototyping | Very low (10–15 min) | Medium |
+| **Haystack** | Component pipeline graph | Retrieval-heavy, document-centric enterprise AI | Medium (30–60 min) | High (since 2020) |
+| **Pydantic AI** | Type-safe agents, dependency injection | Python-native teams, multi-provider, production testability | Low (15–25 min) | Medium-high (v1.0 Sept 2025) |
+| **Mastra** | TypeScript-first composable agents | JS/TS-primary teams, Node.js environments | Low (15–20 min) | Medium (v1.0 Jan 2026) |
 
 ### LlamaIndex vs. LangGraph
 
@@ -294,6 +297,36 @@ AutoGen is now in maintenance mode — Microsoft has ended new feature developme
 **Choose LlamaIndex when:** data retrieval is the core concern — there is no universe in which AutoGen is the better choice for a document-heavy application.
 
 **Choose AutoGen when:** you have a stable, working AutoGen system with no retrieval requirements and no plans to extend it.
+
+### LlamaIndex vs. Haystack
+
+This is the most direct head-to-head comparison in the enterprise retrieval space — both frameworks are retrieval-centric at their core, and both have added agentic capabilities over time. LlamaIndex originated as a data indexing library with strong multi-source ingestion and RAG primitives; Haystack originated as a search and question-answering framework with an explicit component pipeline model. The practical differences: LlamaIndex has broader data connectors and stronger multi-document indexing patterns, making it the better choice for teams whose primary challenge is ingesting and organizing large volumes of heterogeneous data before retrieval begins. Haystack has more mature hybrid retrieval, reranking infrastructure, and production pipeline evaluation, making it the better choice for teams whose primary challenge is retrieval quality and explainability over already-structured document corpora. Both support production RAG; the choice depends on where the hard problem lives.
+
+**Choose LlamaIndex when:** data ingestion complexity (heterogeneous sources, multi-modal documents, complex parsing) is the primary challenge, or you need the broadest possible data connector library.
+
+**Choose Haystack when:** retrieval quality, hybrid search, reranking, and pipeline-level evaluation are the primary engineering concerns — Haystack's retrieval infrastructure is more mature and more explicitly controllable.
+
+The differentiating dimension is **data ingestion sophistication vs. retrieval pipeline control**. Many enterprise systems benefit from both frameworks in different pipeline stages.
+
+### LlamaIndex vs. Pydantic AI
+
+LlamaIndex and Pydantic AI serve different primary concerns and compose well together. LlamaIndex is a data retrieval framework with expanding agent capabilities; Pydantic AI is an agent framework with retrieval accessible through tool calls. Teams building production agents over complex document corpora often use both: LlamaIndex query engines and retrieval pipelines registered as Pydantic AI tools, giving structured-output agents access to high-quality document retrieval without either framework needing to do the other's job.
+
+**Choose LlamaIndex when:** document parsing quality, retrieval accuracy, and data pipeline sophistication are the primary differentiators — LlamaIndex's retrieval layer is materially deeper than what Pydantic AI provides natively.
+
+**Choose Pydantic AI when:** the core value is agent behavior, structured output validation, multi-provider flexibility, and production testability — retrieval is a tool call rather than the central engineering challenge.
+
+The differentiating dimension is **retrieval depth vs. agent code quality**. The hybrid pattern — LlamaIndex query engines as Pydantic AI tools — is a practical and well-suited production architecture.
+
+### LlamaIndex vs. Mastra
+
+LlamaIndex and Mastra rarely compete directly: LlamaIndex is Python-native and retrieval-centric; Mastra is TypeScript-native and agent-centric. For full-stack teams running both Python and Node.js services, a natural architecture is LlamaIndex serving retrieval pipelines (via LlamaIndex's server utilities or a custom API) that Mastra agents consume as tool calls. LlamaIndex's data ingestion and retrieval capabilities have no TypeScript peer — Mastra's built-in RAG is useful for simpler cases but does not match LlamaIndex's depth for enterprise document intelligence workloads.
+
+**Choose LlamaIndex when:** your team is Python-native and document retrieval quality is the core engineering challenge.
+
+**Choose Mastra when:** your team is TypeScript-native, retrieval needs are moderate and can be satisfied with Mastra's built-in RAG or an external retrieval API, and the primary challenge is agent coordination and workflow orchestration.
+
+The differentiating dimension is **language ecosystem and retrieval depth**. These frameworks are complementary in polyglot architectures.
 
 ---
 

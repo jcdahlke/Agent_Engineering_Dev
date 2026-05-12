@@ -267,6 +267,8 @@ Despite the massive GitHub star count (which reflects academic and research inte
 | **Microsoft Agent Framework** | Graph workflows + enterprise orchestration | Azure teams, Semantic Kernel successor users, enterprise governance | Medium (30–60 min) | High (GA Q1 2026) |
 | **Haystack** | Component pipeline graph | Retrieval-heavy, document-centric enterprise AI | Medium (30–60 min) | High (since 2020) |
 | **OpenAI Agents SDK** | Agents, handoffs, guardrails | OpenAI-committed teams, voice agents, speed | Very low (10–20 min) | Medium-high (March 2025) |
+| **LlamaIndex** | Data pipeline + retrieval-first agents | Document-heavy RAG, enterprise data ingestion, knowledge agents | Low-medium (20–40 min) | High for RAG; medium for orchestration |
+| **Mastra** | TypeScript-first composable agents | JS/TS-primary teams, Node.js environments | Low (15–20 min) | Medium (v1.0 Jan 2026) |
 
 ### AutoGen vs. LangGraph
 
@@ -307,6 +309,46 @@ These two frameworks serve fundamentally different audiences with different engi
 **Choose Pydantic AI when:** structured output validation, multi-provider flexibility, dependency injection for testing, and production code quality are the primary requirements.
 
 The differentiating dimension is **research flexibility vs. engineering rigor**. Both are Python-native; they disagree on what "production-ready" means.
+
+### AutoGen vs. OpenAI Agents SDK
+
+Both frameworks make getting to a first working multi-agent prototype fast, but they come from different lineages and make different tradeoffs. The OpenAI Agents SDK is explicitly provider-committed — it provides the tightest possible integration with OpenAI's platform (hosted tools, native tracing, Realtime voice agents) but ties you to OpenAI models. AutoGen / AG2 is provider-agnostic and was designed for research and exploration, with code execution and multi-party conversation as first-class features rather than an afterthought. The OpenAI Agents SDK is the better production choice for OpenAI-committed teams wanting minimal surface area; AutoGen / AG2 is the better research tool for teams exploring emergent multi-agent conversation patterns across any model provider.
+
+**Choose AutoGen / AG2 when:** multi-provider flexibility is required, code-executing agents are central to the workflow, or you need expressive multi-party group chat patterns not easily expressed in handoff routing.
+
+**Choose the OpenAI Agents SDK when:** your stack is fully committed to OpenAI, you need voice agent support, or you want the smallest possible framework surface area with built-in guardrails.
+
+The differentiating dimension is **provider flexibility and conversational emergence vs. OpenAI platform depth**.
+
+### AutoGen vs. Haystack
+
+AutoGen and Haystack rarely compete directly — they address different layers of the AI application stack. AutoGen operates at the agent coordination layer: how multiple agents converse, debate, and produce outputs through iterative dialogue. Haystack operates at the retrieval and pipeline layer: how documents are ingested, indexed, retrieved, and fed into generation. For applications that need both, the natural pattern is Haystack pipelines exposed as tools called by AutoGen agents.
+
+**Choose AutoGen / AG2 when:** the primary challenge is multi-agent reasoning, conversation-driven exploration, or code-generating workflows where retrieval is incidental.
+
+**Choose Haystack when:** retrieval quality, document intelligence, and pipeline explainability are the primary engineering concerns — there is no retrieval-heavy application where AutoGen is a better choice than a dedicated retrieval framework.
+
+The differentiating dimension is **conversation-driven orchestration vs. retrieval pipeline depth**. The two frameworks compose naturally rather than compete.
+
+### AutoGen vs. LlamaIndex
+
+AutoGen and LlamaIndex are architectural peers at different layers of the stack — AutoGen at orchestration, LlamaIndex at data. LlamaIndex's agentic workflow capabilities (Events, Steps, Context) have expanded significantly, but the framework remains retrieval-centric at heart. AutoGen remains conversation-centric. For applications where the primary value is reasoning over large document corpora, LlamaIndex's retrieval infrastructure is far superior. For applications where the primary value is multi-party conversational agent behavior, AutoGen's dialogue model is more expressive.
+
+**Choose AutoGen / AG2 when:** conversational multi-agent patterns, code execution, and emergent task negotiation are the core requirements and document retrieval is a secondary concern.
+
+**Choose LlamaIndex when:** document ingestion quality, retrieval accuracy, and data pipeline sophistication are the primary differentiators — LlamaIndex's data layer is materially stronger than what AutoGen provides.
+
+The differentiating dimension is **conversational orchestration vs. data retrieval infrastructure**. Production systems requiring both typically use LlamaIndex for the data layer with AutoGen or a more production-hardened orchestrator above it.
+
+### AutoGen vs. Mastra
+
+AutoGen and Mastra occupy entirely different language ecosystems and rarely compete for the same team. AutoGen is a Python framework targeting research and AI-exploration workflows; Mastra is a TypeScript framework targeting production Node.js applications. If your team is polyglot and evaluating which language to build your agent system in, Mastra's batteries-included TypeScript stack (memory, durable workflows, RAG, evals, observability) is a stronger production foundation than AutoGen, which is in maintenance mode on the Microsoft side and focused on the research community via AG2.
+
+**Choose AutoGen / AG2 when:** your team is Python-native, the use case is research or exploration-oriented, and conversational multi-agent patterns are the primary value.
+
+**Choose Mastra when:** your team is TypeScript-native, you need a production-ready agent framework with first-class memory, workflows, and observability, and you want active development and long-term maintainability.
+
+The differentiating dimension is **language ecosystem and production readiness**. These frameworks do not compete in the same market segment.
 
 ---
 

@@ -256,6 +256,9 @@ When a tool call fails inside a Mastra agent, the default behavior is retry or s
 | **CrewAI** | Role-based agent crews | Rapid prototyping, role-delegation | Low (10–20 min) | Medium-high |
 | **Haystack** | Component pipeline graph | Retrieval-heavy, document-centric enterprise AI | Medium (30–60 min) | High (since 2020) |
 | **Vercel AI SDK** | Low-level model primitives | Streaming UI, simple tool loops, React integration | Very low (5–10 min) | High |
+| **AutoGen** | Conversational multi-agent collaboration | Code generation, research, open-ended exploration | Low (10–20 min) | Medium (maintenance mode / AG2 active) |
+| **LlamaIndex** | Data pipeline + retrieval-first agents | Document-heavy RAG, enterprise data ingestion | Low-medium (20–40 min) | High for RAG; medium for orchestration |
+| **Microsoft Agent Framework** | Graph workflows + enterprise orchestration | Azure teams, .NET shops, regulated industries | Medium (30–60 min) | High (GA April 2026) |
 
 ### Mastra vs. LangGraph
 
@@ -296,6 +299,56 @@ This comparison is less competitive and more architectural: Mastra is built on t
 **Choose the Vercel AI SDK when:** you need LLM streaming in a frontend application, simple tool calling in a Next.js route, or the lowest-possible overhead for straightforward LLM integration.
 
 The differentiating dimension is **primitive vs. production platform**. The Vercel AI SDK is a layer Mastra builds on, not a competitor.
+
+### Mastra vs. CrewAI
+
+Mastra and CrewAI represent the TypeScript and Python sides of the "accessible, production-ready" agent framework category. Both prioritize fast time-to-working-agent over raw orchestration power, and both have grown from prototype tools into more serious production platforms. CrewAI's role-based crew metaphor is highly intuitive and has a larger community; Mastra's TypeScript-native design means it fits naturally into existing Node.js and Next.js stacks. For polyglot teams, the choice almost always follows the language: Mastra for TypeScript services, CrewAI for Python services.
+
+**Choose Mastra when:** your team is TypeScript-first and you want production-grade memory, durable workflows, and observability without introducing a Python runtime.
+
+**Choose CrewAI when:** your team is Python-first, the role-delegation metaphor maps naturally to your use case, or you need the broader community ecosystem and larger library of existing agent templates.
+
+The differentiating dimension is **language ecosystem**. Both serve teams that value ergonomics over raw orchestration expressiveness.
+
+### Mastra vs. AutoGen
+
+Mastra and AutoGen rarely compete for the same team — they are in different language ecosystems and target different use cases. Mastra is TypeScript-native and optimized for production agent systems with memory, durable workflows, and observability. AutoGen (the Microsoft side) is in maintenance mode; AG2 continues as a community project focused on conversational multi-agent research patterns in Python. For any new project, Mastra is the stronger production foundation for TypeScript teams; AutoGen is not a competitive option for TypeScript teams at all.
+
+**Choose Mastra when:** your team is TypeScript-native and you need a production-quality agent framework with active development and long-term maintainability.
+
+**Choose AutoGen / AG2 when:** your team is Python-native, the use case is research or exploration-oriented, and conversational multi-agent patterns (code execution, group debate) are the primary value.
+
+The differentiating dimension is **language ecosystem and production readiness**. These frameworks do not meaningfully compete.
+
+### Mastra vs. LlamaIndex
+
+Mastra and LlamaIndex address different layers of the agent application stack. LlamaIndex is Python-native and excels at the data layer — ingestion, indexing, chunking, hybrid retrieval over large document corpora. Mastra is TypeScript-native and excels at the agent layer — durable workflows, memory, tool orchestration, and deployment. For polyglot architectures, Mastra agents can call LlamaIndex-powered retrieval APIs as tools, combining TypeScript orchestration with Python retrieval depth. Mastra's built-in RAG covers simpler document retrieval needs; LlamaIndex's pipeline is materially more powerful for enterprise document intelligence.
+
+**Choose Mastra when:** your team is TypeScript-native, retrieval needs are moderate, and the primary challenge is agent orchestration and workflow management.
+
+**Choose LlamaIndex when:** your team is Python-native and document ingestion complexity, retrieval quality, or data pipeline sophistication is the core engineering challenge.
+
+The differentiating dimension is **language ecosystem and retrieval depth**. The two frameworks are complementary in cross-language architectures.
+
+### Mastra vs. Microsoft Agent Framework
+
+Both Mastra and Microsoft Agent Framework target production-serious teams, but they serve entirely different infrastructure profiles. Mastra is TypeScript-native and cloud-agnostic — it runs on Cloudflare Workers, Vercel, and any Node.js environment. Microsoft Agent Framework is Python + .NET and Azure-committed — its deployment story, compliance features, and enterprise plumbing are Azure-first. For organizations already on Azure with .NET requirements, Agent Framework is the more natural fit. For organizations running cloud-neutral or non-Azure TypeScript stacks, Mastra is the appropriate choice.
+
+**Choose Mastra when:** your team is TypeScript-first, your infrastructure is cloud-neutral or non-Azure, and you want batteries-included production features (memory, workflows, evals, observability) without vendor lock-in.
+
+**Choose Microsoft Agent Framework when:** your infrastructure is Azure, you need .NET support, enterprise compliance hooks are non-negotiable, or you are migrating from AutoGen.
+
+The differentiating dimension is **TypeScript cloud-agnostic stack vs. Azure enterprise .NET platform**.
+
+### Mastra vs. Haystack
+
+Mastra and Haystack serve different primary concerns in different language ecosystems. Mastra is TypeScript-native and optimized for agent orchestration with built-in RAG for moderate retrieval needs. Haystack is Python-native and optimized for production retrieval pipelines — hybrid search, reranking, table extraction, and document evaluation infrastructure. For applications with serious retrieval requirements, Haystack's pipeline depth has no TypeScript equivalent; the practical integration is Haystack serving retrieval endpoints that Mastra agents call as tools.
+
+**Choose Mastra when:** your team is TypeScript-native, retrieval needs are moderate and can be satisfied with Mastra's built-in RAG or an external API, and agent orchestration is the primary challenge.
+
+**Choose Haystack when:** retrieval quality, hybrid search, pipeline explainability, or EU data sovereignty requirements make a dedicated retrieval framework necessary — Haystack's depth at this layer is materially superior to Mastra's built-in capabilities.
+
+The differentiating dimension is **TypeScript agent orchestration vs. Python retrieval pipeline depth**. These frameworks are complementary in polyglot production architectures.
 
 ---
 

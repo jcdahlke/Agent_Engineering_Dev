@@ -306,6 +306,10 @@ As an open-source framework, CrewAI's agent reasoning and task execution are les
 | **LlamaIndex** | Data indexing + retrieval | RAG-heavy, data-centric workflows | Days | High |
 | **OpenAI Swarm** | Lightweight agent handoffs | Simple routing prototypes | Hours | Low |
 | **Mastra** | TypeScript-native agents | JS/TS teams | Days | Medium |
+| **Pydantic AI** | Type-safe agents, dependency injection | Python-native teams, multi-provider, production testability | Low (15–25 min) | Medium-high (v1.0 Sept 2025) |
+| **Microsoft Agent Framework** | Graph workflows + enterprise orchestration | Azure teams, regulated industries, .NET shops | Medium (30–60 min) | High (GA April 2026) |
+| **Haystack** | Component pipeline graph | Retrieval-heavy, document-centric enterprise AI | Medium (30–60 min) | High (since 2020) |
+| **OpenAI Agents SDK** | Agents, handoffs, guardrails | OpenAI-committed teams, voice agents, speed | Very low (10–20 min) | Medium-high (March 2025) |
 
 ### CrewAI vs LangGraph
 
@@ -348,6 +352,56 @@ LlamaIndex excels at the data layer — ingestion, indexing, chunking, retrieval
 Swarm is a minimal educational framework for understanding agent handoffs. It has no persistence, no state management, no deployment tooling, and is not designed for production.
 
 **Choose Swarm when:** Learning multi-agent concepts. Otherwise use CrewAI.
+
+### CrewAI vs Pydantic AI
+
+Pydantic AI and CrewAI represent opposite ends of the Python agent framework spectrum: CrewAI prioritizes ergonomics and speed-to-demo, while Pydantic AI prioritizes type safety, testability, and production code quality. CrewAI lets you define an agent with a role, goal, and backstory in a few lines and have something working in under an hour. Pydantic AI requires more explicit code — defining tools, dependencies, and output schemas — but produces agents that behave like production software: type-checked, unit-testable via dependency injection, and predictable across model providers.
+
+**Choose CrewAI when:** rapid prototyping is the goal, the workflow maps cleanly to role delegation, and non-engineers need to read or configure agent behavior.
+
+**Choose Pydantic AI when:** production code quality is the priority — structured output validation, multi-provider flexibility, and testable agents are more important than speed-to-first-demo.
+
+The differentiating dimension is **accessibility and speed vs. engineering rigor**. Many teams prototype with CrewAI and migrate to Pydantic AI (or LangGraph) when production requirements crystallize.
+
+### CrewAI vs Microsoft Agent Framework
+
+Microsoft Agent Framework is the enterprise-grade orchestration layer built on Semantic Kernel, targeting regulated industries and Azure deployments. CrewAI is built for rapid multi-agent prototyping, not enterprise compliance. These frameworks are rarely in direct competition — they serve different lifecycle stages. CrewAI is a powerful proof-of-concept tool; Agent Framework is what you reach for when that proof of concept needs to become a production system in an enterprise environment.
+
+**Choose CrewAI when:** you need a working demo quickly, you are not on Azure, or enterprise compliance requirements (session persistence, middleware pipelines, audit logging) are not yet a concern.
+
+**Choose Microsoft Agent Framework when:** your infrastructure is Azure, you need .NET support, or the application has enterprise governance requirements that CrewAI's architecture cannot satisfy.
+
+The differentiating dimension is **prototyping speed vs. enterprise production readiness**.
+
+### CrewAI vs OpenAI Agents SDK
+
+Both frameworks are designed for fast time-to-working-agent, but they come from different philosophies. CrewAI's role-based crew model makes it highly readable to non-technical stakeholders and natural for workflows that mirror human teams. The OpenAI Agents SDK's handoff model is more flexible but requires deeper familiarity with OpenAI's platform and is explicitly tied to OpenAI models. CrewAI is provider-agnostic; the Agents SDK is OpenAI-only.
+
+**Choose CrewAI when:** provider flexibility matters, the team includes non-engineers who will read or configure agent behavior, or the role-delegation metaphor maps naturally to your workflow.
+
+**Choose the OpenAI Agents SDK when:** your stack is fully committed to OpenAI, you need first-class voice agent support, or you want the tightest integration with OpenAI's tracing and hosted tools infrastructure.
+
+The differentiating dimension is **role-based readability and provider flexibility vs. OpenAI platform integration depth**.
+
+### CrewAI vs Haystack
+
+CrewAI and Haystack occupy different layers of the AI application stack and compose naturally. Haystack is a retrieval and pipeline framework where document ingestion, hybrid search, reranking, and generation are first-class concerns. CrewAI is an orchestration framework where agent roles and task delegation are first-class concerns. For applications that need both retrieval quality and multi-agent coordination, the practical pattern is Hayhooks-served Haystack pipelines registered as CrewAI tools.
+
+**Choose CrewAI when:** the core challenge is coordinating multiple agents with distinct roles across a business workflow, and retrieval is one of many tool capabilities rather than the central engineering challenge.
+
+**Choose Haystack when:** document intelligence, retrieval quality, and pipeline explainability are the primary product requirements — Haystack's retrieval infrastructure is far deeper than anything CrewAI provides natively.
+
+The differentiating dimension is **agent coordination vs. retrieval pipeline depth**. The two frameworks are complementary, not competitive.
+
+### CrewAI vs Mastra
+
+CrewAI and Mastra represent the Python and TypeScript sides of the "accessible, fast prototyping" agent framework category. Both make it easy to get a working multi-agent system in hours rather than days. Mastra is TypeScript-native and adds production-grade memory, durable workflows, and observability out of the box — making it the better long-term foundation for JS/TS teams. CrewAI is Python-native and has a larger community and more examples in the agentic AI space.
+
+**Choose CrewAI when:** your team is Python-first and the role-delegation metaphor fits your use case.
+
+**Choose Mastra when:** your team is TypeScript-first and you want a comparable ergonomic experience with better built-in production tooling (memory, durable execution, evals).
+
+The differentiating dimension is **language ecosystem**. Both frameworks serve the same audience (teams that want fast prototyping over raw control) in different language stacks.
 
 ---
 

@@ -257,6 +257,9 @@ Dense retrieval — the baseline for semantic search — requires embedding mode
 | **CrewAI** | Role-based agent crews | Rapid prototyping, role-delegation workflows | Low (10–20 min) | Medium-high |
 | **OpenAI Agents SDK** | Agents, handoffs, guardrails | OpenAI-committed teams, voice, speed-to-production | Very low (10–20 min) | Medium-high (March 2025) |
 | **LlamaIndex** | Data pipeline + retrieval-first agents | Document-heavy RAG, enterprise data indexing | Low-medium (20–40 min) | High for RAG; medium for orchestration |
+| **AutoGen** | Conversational multi-agent collaboration | Code generation, research, open-ended exploration | Low (10–20 min) | Medium (maintenance mode / AG2 active) |
+| **Microsoft Agent Framework** | Graph workflows + enterprise orchestration | Azure teams, .NET shops, regulated industries | Medium (30–60 min) | High (GA April 2026) |
+| **Mastra** | TypeScript-first composable agents | JS/TS-primary teams, Node.js environments | Low (15–20 min) | Medium (v1.0 Jan 2026) |
 
 ### Haystack vs. LangGraph
 
@@ -297,6 +300,56 @@ These two frameworks rarely compete directly — they serve different primary co
 **Choose Pydantic AI when:** the application is agent-centric with moderate retrieval needs, type safety and testability are priorities, or multi-provider flexibility matters more than retrieval depth.
 
 The differentiating dimension is **retrieval-first vs. agent-first**. The hybrid pattern — Hayhooks-deployed Haystack pipelines as Pydantic AI tools — is a reasonable production architecture.
+
+### Haystack vs. CrewAI
+
+Haystack and CrewAI operate at different layers of the stack and compose naturally. CrewAI provides the multi-agent orchestration layer — role-based agents with task delegation and inter-agent communication. Haystack provides the retrieval layer — document ingestion, hybrid search, reranking, and generation pipelines. They are rarely in direct competition; teams that need both typically expose Haystack pipelines as tools registered with CrewAI agents. The choice only becomes exclusive if you are trying to solve everything with one framework, which neither is optimized for.
+
+**Choose Haystack when:** the core challenge is retrieval quality, document parsing, or pipeline explainability — problems that CrewAI's retrieval support cannot match.
+
+**Choose CrewAI when:** multi-agent role coordination is the core challenge and retrieval is one of many tools the agents can call.
+
+The differentiating dimension is **retrieval pipeline sophistication vs. agent coordination ergonomics**. These frameworks are complementary; production systems benefit from using both.
+
+### Haystack vs. AutoGen
+
+AutoGen's primary strength — conversational multi-agent patterns for code generation and research exploration — is largely orthogonal to Haystack's retrieval-centric architecture. AutoGen is in maintenance mode (Microsoft side) and is not adding new retrieval capabilities. For any application where document retrieval quality is material, Haystack is the unambiguous choice. The natural composition pattern is Haystack pipelines exposed as AutoGen tools, giving conversational agents access to high-quality document retrieval without Haystack needing to own the orchestration layer.
+
+**Choose Haystack when:** document retrieval quality, hybrid search, or pipeline-based explainability is the core product requirement — AutoGen has no competitive answer at this layer.
+
+**Choose AutoGen / AG2 when:** multi-party conversational agent patterns or code execution are the primary requirements and document retrieval needs are modest.
+
+The differentiating dimension is **retrieval depth vs. conversational emergence**. AutoGen's maintenance mode status also weighs against choosing it for new projects.
+
+### Haystack vs. Microsoft Agent Framework
+
+Microsoft Agent Framework is the enterprise orchestration layer; Haystack is the enterprise retrieval layer. They sit at different positions in the architecture and are more naturally combined than compared. Agent Framework's retrieval support (via Azure AI Search or plugin tools) is functional but not as deep as Haystack's native hybrid retrieval, reranking, and pipeline evaluation infrastructure. For European enterprises with data sovereignty requirements, Haystack's cloud-neutral architecture is often a requirement that Agent Framework's Azure-first approach cannot satisfy.
+
+**Choose Haystack when:** retrieval quality, pipeline transparency, cloud neutrality, or EU data sovereignty are hard requirements; or when the application is fundamentally document-intelligence-first rather than workflow-orchestration-first.
+
+**Choose Microsoft Agent Framework when:** your infrastructure is Azure, you need enterprise compliance middleware (.NET support, session persistence, Foundry deployment), and retrieval is a secondary component that can be satisfied with Azure AI Search integration.
+
+The differentiating dimension is **retrieval pipeline depth and cloud neutrality vs. enterprise Azure orchestration plumbing**.
+
+### Haystack vs. OpenAI Agents SDK
+
+The OpenAI Agents SDK is an agent coordination framework with retrieval accessible through tools; Haystack is a retrieval and pipeline framework with agent capabilities layered on top. They serve different primary use cases and compose well: register Hayhooks-deployed Haystack pipelines as tools on OpenAI Agents SDK agents to get the best of both. The Agents SDK's explicit OpenAI commitment means it is not a viable choice for teams that need cloud-neutral or multi-provider retrieval infrastructure, which is Haystack's home turf.
+
+**Choose Haystack when:** retrieval quality and document intelligence are the primary engineering challenges, or cloud-neutral deployment is a requirement.
+
+**Choose the OpenAI Agents SDK when:** the primary challenge is agent coordination and tool use, retrieval needs are moderate, and your stack is committed to OpenAI.
+
+The differentiating dimension is **retrieval-first architecture vs. OpenAI platform integration**. The hybrid pattern — Haystack as a tool in an Agents SDK agent — is a well-suited production architecture.
+
+### Haystack vs. Mastra
+
+Haystack and Mastra exist in different language ecosystems and rarely compete directly. Haystack is Python-native and retrieval-centric; Mastra is TypeScript-native and agent-centric. For full-stack teams running both Python and Node.js services, a practical architecture is Haystack pipelines (served via Hayhooks) as HTTP tools consumed by Mastra agents — giving the TypeScript orchestration layer access to Haystack's superior retrieval capabilities without requiring Python in the agent runtime.
+
+**Choose Haystack when:** retrieval quality and document intelligence are the primary concerns, your team is Python-native, and pipeline explainability is important.
+
+**Choose Mastra when:** your team is TypeScript-first, the core challenge is agent coordination and workflow orchestration, and retrieval needs can be met via tool calls to an external service.
+
+The differentiating dimension is **language ecosystem and retrieval depth vs. TypeScript-native agent production stack**.
 
 ---
 

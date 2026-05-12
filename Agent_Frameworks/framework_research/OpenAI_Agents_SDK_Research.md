@@ -259,6 +259,9 @@ Building a production agent system on the OpenAI Agents SDK ties architectural d
 | **Microsoft Agent Framework** | Dual-track workflows + agent orchestration | Azure enterprise, .NET shops, regulated industries | Medium (30–60 min) | High (GA April 2026) |
 | **Google ADK** | Workflow + LLM agents, GCP-native | GCP deployments, Gemini integration, A2A protocol | Medium (30–60 min) | Medium (growing) |
 | **Mastra** | TypeScript-first composable agents | JS/TS-primary teams, Node.js environments | Low (15–30 min) | Medium |
+| **AutoGen** | Conversational multi-agent collaboration | Code generation, research, open-ended exploration | Low (10–20 min) | Medium (maintenance mode / AG2 active) |
+| **Pydantic AI** | Type-safe agents, dependency injection | Python-native teams, multi-provider, production testability | Low (15–25 min) | Medium-high (v1.0 Sept 2025) |
+| **Haystack** | Component pipeline graph | Retrieval-heavy, document-centric enterprise AI | Medium (30–60 min) | High (since 2020) |
 
 ### OpenAI Agents SDK vs. LangGraph
 
@@ -299,6 +302,46 @@ These two frameworks rarely compete directly — they serve different primary ne
 **Choose LlamaIndex when:** document parsing quality, retrieval accuracy, and data pipeline sophistication are the primary differentiators.
 
 The differentiating dimension is **coordination vs. retrieval**. The hybrid pattern — LlamaIndex query engines as Agents SDK tools — is a well-established production architecture.
+
+### OpenAI Agents SDK vs. AutoGen
+
+AutoGen (Microsoft side) is in maintenance mode and AG2 continues as a community-driven project. Neither is a strong competitive choice against the Agents SDK for new production work. AutoGen's strengths — conversational multi-agent dialogue, group chat patterns, code execution — are orthogonal to the Agents SDK's primary design; the two frameworks rarely serve the same use case. For teams using AutoGen for conversational exploration and research, AG2 remains viable. For teams evaluating the Agents SDK vs. AutoGen for new work, the Agents SDK is the stronger choice in almost every production scenario.
+
+**Choose the OpenAI Agents SDK when:** you are starting a new project and need a well-maintained, production-capable agent framework with active development, voice support, and platform integration.
+
+**Choose AutoGen / AG2 when:** multi-party conversational agent patterns, code execution in group chat workflows, or provider-agnostic multi-model experimentation are the primary requirements — and you are comfortable operating on a community-maintained fork.
+
+The differentiating dimension is **production platform depth and active maintenance vs. conversational emergence and provider flexibility**.
+
+### OpenAI Agents SDK vs. Pydantic AI
+
+These two frameworks make opposite bets on provider strategy and represent different production philosophies. The Agents SDK accepts OpenAI lock-in in exchange for unmatched platform integration: hosted tools, Responses API, native tracing to the OpenAI dashboard, first-class voice agents via RealtimeAgent. Pydantic AI accepts a higher configuration burden in exchange for provider independence: support for 30+ model providers, structured output validation at the type level, dependency injection for test-mocking, and a codebase that doesn't depend on any single vendor's product roadmap. Teams that are deeply committed to OpenAI get real value from the Agents SDK's native integration. Teams that want to hedge against vendor decisions or run multiple models will find Pydantic AI's architecture more durable.
+
+**Choose the OpenAI Agents SDK when:** your entire stack is OpenAI, you need voice agent support, you want the fastest path to a working single-provider system, or TypeScript parity matters.
+
+**Choose Pydantic AI when:** multi-provider support is a requirement, you need production testability via dependency injection, you want structured output validation at the Python type level, or your team's expertise is in Python software engineering rather than OpenAI platform products.
+
+The differentiating dimension is **OpenAI platform depth vs. provider independence and engineering rigor**.
+
+### OpenAI Agents SDK vs. Haystack
+
+The Agents SDK is an agent coordination framework; Haystack is a retrieval and document intelligence framework. They are more complementary than competitive, and the natural integration pattern — registering Hayhooks-served Haystack pipelines as tools on Agents SDK agents — combines OpenAI-native coordination with production-grade document retrieval. The Agents SDK's own retrieval integration (via File Search and vector store tools) is sufficient for straightforward RAG, but does not approach Haystack's depth in hybrid retrieval, reranking, or pipeline evaluation.
+
+**Choose the OpenAI Agents SDK when:** agent coordination and tool use are the core challenges; retrieval needs are moderate and can be met with OpenAI's File Search hosted tool or a simple retrieval API.
+
+**Choose Haystack when:** retrieval quality, hybrid search, document intelligence, or cloud-neutral pipeline explainability are the primary engineering challenges.
+
+The differentiating dimension is **agent coordination and OpenAI platform integration vs. retrieval pipeline sophistication**. The two frameworks pair well in production architectures.
+
+### OpenAI Agents SDK vs. Mastra
+
+The Agents SDK and Mastra both target developers who want fast time-to-working-agent, and the Agents SDK's TypeScript SDK makes this a real cross-language comparison. The fundamental difference is scope: the Agents SDK has the smallest possible surface area and leaves production concerns (memory persistence, durable workflows, RAG, evals) to the developer. Mastra is explicitly batteries-included, shipping production-ready solutions for all of those concerns. For OpenAI-committed teams with simple orchestration needs, the Agents SDK is faster and lighter. For TypeScript teams that need memory, durable workflows, multi-provider support, and deployment tooling without building those layers themselves, Mastra is the more complete production foundation.
+
+**Choose the OpenAI Agents SDK when:** your TypeScript stack is fully committed to OpenAI, orchestration needs are simple, you want the minimal possible framework surface area, or voice agent support is a first-class requirement.
+
+**Choose Mastra when:** you need production-grade memory, durable workflows, built-in RAG, evals, and observability in a TypeScript-native framework — and you do not want to be locked into OpenAI's model ecosystem.
+
+The differentiating dimension is **OpenAI platform minimalism vs. TypeScript production completeness**.
 
 ---
 

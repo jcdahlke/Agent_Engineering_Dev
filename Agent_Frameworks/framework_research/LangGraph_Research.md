@@ -281,6 +281,10 @@ LangGraph is developed and maintained by LangChain, Inc., a VC-backed startup. S
 | **LlamaIndex** | Data indexing + retrieval | RAG-heavy, data-centric workflows | Medium |
 | **OpenAI Swarm** | Lightweight agent handoffs | Simple multi-agent routing | Low |
 | **Mastra** | TypeScript-native agents | JS/TS teams, web-integrated agents | Medium |
+| **Pydantic AI** | Type-safe agents, dependency injection | Python teams, multi-provider, testability-first | Medium |
+| **Microsoft Agent Framework** | Dual-track graph + enterprise orchestration | Azure enterprise, .NET shops, regulated industries | High |
+| **Haystack** | Component pipeline graph | Retrieval-heavy, document-centric enterprise AI | Medium |
+| **OpenAI Agents SDK** | Agents, handoffs, guardrails | OpenAI-committed teams, voice agents, speed | Low |
 
 ### LangGraph vs CrewAI
 
@@ -319,6 +323,56 @@ OpenAI Swarm is a minimal, educational framework for lightweight agent handoffs 
 **Choose LangGraph when:** Building anything for production or requiring state persistence.
 
 **Choose Swarm when:** Prototyping simple handoff patterns or learning multi-agent concepts.
+
+### LangGraph vs Pydantic AI
+
+LangGraph and Pydantic AI are architectural peers that many production teams use together rather than choosing between them. LangGraph's strength is orchestration: explicit graph-based routing, durable checkpoint-based persistence across failures, LangSmith's time-travel debugging, and complex multi-agent coordination with conditional branching. Pydantic AI's strength is agent code quality: type-safe structured outputs, multi-provider flexibility, dependency injection for testing, and minimal framework overhead. A common and effective pattern is to use Pydantic AI to define the agent logic and output validation inside individual LangGraph nodes, with LangGraph managing the graph topology above them.
+
+**Choose LangGraph when:** the complexity is in the workflow — you need explicit stateful routing, durable persistence, parallel branches, or human-in-the-loop approval gates.
+
+**Choose Pydantic AI when:** the complexity is in the agent — you need structured output validation, multi-provider model routing, or unit-testable agent behavior. Consider combining both.
+
+The differentiating dimension is **orchestration control vs. agent code quality**. The two frameworks are more complementary than competitive.
+
+### LangGraph vs Microsoft Agent Framework
+
+Both frameworks take explicit, structured orchestration seriously — both resist fully emergent agent behavior in favor of defined workflows. The critical differences are ecosystem and architecture. LangGraph is Python-only with LangSmith as its observability layer; Agent Framework is Python + .NET with Azure Durable Functions as its persistence layer and Foundry as its deployment target. LangGraph has a deeper community knowledge base and more battle-tested production deployments. Agent Framework has deeper enterprise compliance machinery and first-class Azure integration.
+
+**Choose LangGraph when:** your team is Python-only, you value LangSmith's debugging and visualization capabilities, cloud neutrality is required, or your orchestration needs are more complex than what Agent Framework's dual-track model expresses cleanly.
+
+**Choose Microsoft Agent Framework when:** your infrastructure is Azure, .NET support is required, enterprise compliance hooks (middleware, session management, audit logging) are non-negotiable, or you are migrating from AutoGen.
+
+The differentiating dimension is **community depth and debugging tooling vs. enterprise Azure plumbing**.
+
+### LangGraph vs Haystack
+
+LangGraph and Haystack take explicit, deterministic control most seriously among their peer frameworks — both resist "let the LLM decide everything." Their centers of gravity differ: LangGraph's is agent orchestration and workflow control; Haystack's is retrieval pipeline quality and document intelligence. For the majority of production applications, these are complementary concerns. The common architecture is Haystack retrieval pipelines (served via Hayhooks) registered as LangGraph tool nodes.
+
+**Choose LangGraph when:** the hard problem is multi-agent coordination — routing, state management, parallel execution, and durable checkpointing across a workflow.
+
+**Choose Haystack when:** the hard problem is retrieving and synthesizing information from large document corpora — hybrid retrieval, reranking, and table-aware extraction are Haystack's native strengths.
+
+The differentiating dimension is **orchestration power vs. retrieval depth**. Many high-quality production systems use both.
+
+### LangGraph vs OpenAI Agents SDK
+
+LangGraph and the OpenAI Agents SDK are the most commonly compared frameworks for Python teams evaluating production options. The Agents SDK delivers dramatically faster time-to-working-agent and is the better choice for straightforward tool use, handoff routing, and OpenAI-native development. LangGraph delivers dramatically more control for complex workflows and is the better choice when orchestration complexity, durable state, or multi-provider requirements come into play.
+
+**Choose LangGraph when:** you need deterministic routing defined in code rather than LLM prompt; durable execution across failures is required; LangSmith's debugging would materially reduce development time; or multi-provider model support is a requirement.
+
+**Choose the OpenAI Agents SDK when:** your team is committed to OpenAI, orchestration needs are moderate, you want the fastest possible path from idea to working agent, or you need first-class voice agent support.
+
+The differentiating dimension is **orchestration depth vs. developer ergonomics**. The Agents SDK makes simple cases trivial; LangGraph makes complex cases tractable.
+
+### LangGraph vs Mastra
+
+The most common cross-language framework comparison. The answer is almost always determined by your team's primary language. Mastra provides LangGraph-comparable durable workflows and deterministic agent orchestration for TypeScript teams without requiring a Python runtime. LangGraph has a deeper orchestration model (more expressive state machines, richer conditional routing), a larger community, and more production case studies. For organizations running both Python and TypeScript workloads, the two frameworks can coexist with a shared MCP tool layer.
+
+**Choose LangGraph when:** your team is Python-first, you need the most expressive state machine model available, or LangSmith's observability is a priority.
+
+**Choose Mastra when:** your team is TypeScript-first and you want production-grade durable workflows, memory, and observability without a Python runtime.
+
+The differentiating dimension is **language ecosystem**. Both solve the hard production orchestration problems; they solve them for different primary development communities.
 
 ---
 

@@ -265,6 +265,8 @@ Pydantic's commercial product is Logfire — observability, not an agent deploym
 | **LlamaIndex** | Data pipeline + retrieval-first agents | Document-heavy RAG, enterprise data ingestion | Low-medium (20–40 min) | High for RAG; medium for orchestration |
 | **Microsoft Agent Framework** | Dual-track workflows + orchestration | Azure enterprise, .NET shops, regulated industries | Medium (30–60 min) | High (GA April 2026) |
 | **Mastra** | TypeScript-first composable agents | JS/TS-primary teams, Node.js environments | Low (15–30 min) | Medium |
+| **AutoGen** | Conversational multi-agent collaboration | Code generation, research, open-ended exploration | Low (10–20 min) | Medium (maintenance mode / AG2 active) |
+| **Haystack** | Component pipeline graph | Retrieval-heavy, document-centric enterprise AI | Medium (30–60 min) | High (since 2020) |
 
 ### Pydantic AI vs. LangGraph
 
@@ -305,6 +307,46 @@ These frameworks serve different primary needs and rarely compete directly. Llam
 **Choose LlamaIndex when:** document parsing quality, retrieval accuracy, and data pipeline construction are the primary differentiators.
 
 The differentiating dimension is **agent coordination vs. retrieval depth**. The hybrid pattern — LlamaIndex as a Pydantic AI tool — is a practical production architecture.
+
+### Pydantic AI vs. AutoGen
+
+Pydantic AI and AutoGen serve fundamentally different audiences with different engineering values. AutoGen (Microsoft side) is in maintenance mode and AG2 continues as a research-community project focused on conversational multi-agent patterns: group chat, multi-party debate, code execution workflows where agents negotiate task structure through dialogue. Pydantic AI is focused on production engineering: type-safe structured outputs, dependency injection for testing, multi-provider support, and minimal framework overhead. The two rarely compete for the same use case — Pydantic AI is the clear choice for any new production Python agent project.
+
+**Choose Pydantic AI when:** structured output validation, multi-provider flexibility, testability, and production code quality are the primary requirements — this covers the vast majority of production use cases.
+
+**Choose AutoGen / AG2 when:** multi-party conversational agent patterns, code-executing group chat, or emergent task negotiation through dialogue are the specific requirements, and you are comfortable with a community-maintained project.
+
+The differentiating dimension is **production engineering rigor vs. conversational emergence**. For new production projects, Pydantic AI is almost always the stronger starting point.
+
+### Pydantic AI vs. Haystack
+
+Pydantic AI and Haystack are retrieval-adjacent frameworks that rarely compete directly — they serve different primary concerns and compose naturally. Pydantic AI is agent-first; Haystack is retrieval-first. Teams building production agents over complex document corpora typically use both: Haystack manages the retrieval pipeline (ingestion, hybrid search, reranking) while Pydantic AI agents call Haystack-powered endpoints as tools. The choice only becomes exclusive for teams trying to use one framework for everything — at which point the question is whether the primary engineering challenge is agent behavior or document retrieval quality.
+
+**Choose Pydantic AI when:** the application is agent-centric with moderate retrieval needs, type safety and production testability are the primary priorities, or retrieval can be satisfied via a tool call to an external service.
+
+**Choose Haystack when:** retrieval quality, hybrid search, document intelligence, or EU data sovereignty requirements make a dedicated retrieval pipeline framework necessary — Haystack's retrieval depth is materially superior.
+
+The differentiating dimension is **agent-first code quality vs. retrieval-first pipeline depth**. The hybrid pattern — Hayhooks-served Haystack pipelines as Pydantic AI tools — is a practical and well-suited production architecture.
+
+### Pydantic AI vs. Mastra
+
+Pydantic AI and Mastra are architectural peers serving the same role in their respective language ecosystems — the "production-quality, type-safe, batteries-included" agent framework for Python (Pydantic AI) and TypeScript (Mastra). Both emphasize type safety (Pydantic models vs. Zod schemas), both ship observability integrations (Logfire vs. Mastra Cloud / OpenTelemetry), and both prioritize developer experience over raw flexibility. For organizations running polyglot agent workloads across Python and TypeScript services, both frameworks can coexist with a shared MCP tool layer — Mastra's MCP server exposure and Pydantic AI's MCP client support make them directly interoperable.
+
+**Choose Pydantic AI when:** your team is Python-first, you need the widest possible model provider support, or your existing infrastructure and tooling are Python-native.
+
+**Choose Mastra when:** your team is TypeScript-first and you want a comparable production-quality agent experience with built-in memory, durable workflows, and deployment tooling without a Python runtime.
+
+The differentiating dimension is **language ecosystem**. The two frameworks are architectural peers; the choice follows your team's primary language.
+
+### Pydantic AI vs. Microsoft Agent Framework
+
+Pydantic AI and Microsoft Agent Framework both target production Python teams, but at different scales of enterprise requirement. Pydantic AI is framework-minimal: it adds type safety, multi-provider support, and testability on top of straightforward agent patterns, with minimal configuration overhead. Agent Framework is enterprise-maximum: it adds session persistence, middleware pipelines, .NET dual runtime, Azure Durable Functions checkpointing, Foundry deployment, and Semantic Kernel integration — all requiring Azure commitment. Teams that need enterprise orchestration at Azure scale will find Agent Framework's plumbing necessary; teams that need production code quality without cloud vendor lock-in will find Pydantic AI more appropriate.
+
+**Choose Pydantic AI when:** cloud neutrality is important, multi-provider model flexibility is required, or enterprise compliance plumbing is not a hard requirement — Pydantic AI's simpler surface area produces more maintainable code for most production use cases outside regulated Azure environments.
+
+**Choose Microsoft Agent Framework when:** your infrastructure is Azure, .NET support is required, enterprise compliance middleware is non-negotiable, or you are migrating from AutoGen with complex Semantic Kernel integrations already in place.
+
+The differentiating dimension is **cloud-neutral agent code quality vs. Azure enterprise orchestration depth**.
 
 ---
 

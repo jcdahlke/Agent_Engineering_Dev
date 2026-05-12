@@ -265,6 +265,9 @@ Agent Framework's workflow graph is defined in code but has no built-in visualiz
 | **Google ADK** | Workflow + LLM agents, GCP-native | GCP-deployed agents, Gemini integration, multi-agent collaboration | Medium (30–60 min) | Medium (growing rapidly) |
 | **Mastra** | TypeScript-first composable agents | JS/TS teams, frontend-heavy stacks, Node.js environments | Low (15–30 min) | Medium |
 | **OpenAI Agents SDK** | Minimal primitives: agents, handoffs, guardrails, tools | Simple OpenAI-native agents, fast prototyping | Very low (10–15 min) | Medium |
+| **Pydantic AI** | Type-safe agents, dependency injection | Python-native teams, multi-provider, production testability | Low (15–25 min) | Medium-high (v1.0 Sept 2025) |
+| **Haystack** | Component pipeline graph | Retrieval-heavy, document-centric enterprise AI | Medium (30–60 min) | High (since 2020) |
+| **LlamaIndex** | Data pipeline + retrieval-first agents | Document-heavy RAG, enterprise data ingestion | Low-medium (20–40 min) | High for RAG; medium for orchestration |
 
 ### Microsoft Agent Framework vs. LangGraph
 
@@ -303,6 +306,56 @@ Google ADK is the most direct architectural competitor. It also supports both wo
 **Choose Microsoft Agent Framework when:** your cloud infrastructure is Azure or your organization uses Microsoft 365, Azure DevOps, or other Microsoft enterprise products.
 
 **Choose Google ADK when:** you are deployed on GCP, need tight Gemini integration, or need the most mature A2A protocol support. ADK is growing rapidly in 2026.
+
+### Microsoft Agent Framework vs. OpenAI Agents SDK
+
+These two are the "platform-first" frameworks — both designed to provide the best experience within a specific vendor ecosystem. The comparison almost always reduces to which vendor you are committed to. Agent Framework provides significantly deeper enterprise plumbing: .NET + Python dual runtime, Azure Durable Functions checkpointing, Foundry deployment, Semantic Kernel middleware, compliance-grade session management, and a published AutoGen migration path. The OpenAI Agents SDK provides a dramatically simpler developer experience and first-class voice agent support, but is Python/TypeScript-only and accepts OpenAI model lock-in as the cost of platform integration.
+
+**Choose Microsoft Agent Framework when:** your infrastructure is Azure, .NET support is required, enterprise compliance machinery is non-negotiable, or you need the dual-track workflow + agent orchestration architecture for mixed deterministic/agentic workloads.
+
+**Choose the OpenAI Agents SDK when:** your stack is cloud-neutral or AWS-based, your team is Python or TypeScript (not .NET), you want the fastest initial development experience, or voice agent support is a first-class requirement.
+
+The differentiating dimension is **enterprise Azure depth vs. simplicity and OpenAI platform integration**.
+
+### Microsoft Agent Framework vs. Pydantic AI
+
+Microsoft Agent Framework and Pydantic AI both target production Python teams but at different levels of the stack. Pydantic AI focuses on agent code quality: type-safe structured outputs, multi-provider model support, dependency injection for testability, and minimal framework overhead. Agent Framework focuses on enterprise orchestration infrastructure: session persistence, middleware pipelines, .NET support, Azure Durable Functions checkpointing, and Foundry deployment. Teams committed to Azure will often use both together — Pydantic AI-style agent patterns inside Semantic Kernel components within the Agent Framework orchestration layer.
+
+**Choose Microsoft Agent Framework when:** Azure infrastructure, .NET support, enterprise compliance, or Semantic Kernel integration are hard requirements.
+
+**Choose Pydantic AI when:** cloud neutrality is important, you need multi-provider model flexibility, your team values testability and minimal framework overhead over enterprise orchestration plumbing, or you are not on Azure.
+
+The differentiating dimension is **enterprise Azure orchestration depth vs. cloud-neutral agent code quality**.
+
+### Microsoft Agent Framework vs. LlamaIndex
+
+Microsoft Agent Framework and LlamaIndex both operate at the enterprise-serious tier but address different parts of the stack. Agent Framework's core strengths are workflow orchestration, enterprise middleware, and Azure integration. LlamaIndex's core strengths are document ingestion, retrieval accuracy, and data pipeline sophistication. For Azure enterprises building applications where both complex orchestration and deep document retrieval matter, combining the two is the natural architecture — LlamaIndex for the data layer, Agent Framework for the orchestration layer. Choosing exclusively requires identifying which concern is primary.
+
+**Choose Microsoft Agent Framework when:** orchestration complexity, enterprise compliance, .NET support, or Azure-native deployment are the primary requirements and retrieval needs can be met with Azure AI Search.
+
+**Choose LlamaIndex when:** document parsing quality, retrieval accuracy, and data pipeline control are the primary differentiators — LlamaIndex's retrieval depth exceeds what Azure AI Search integration provides for complex document intelligence use cases. Also choose LlamaIndex when cloud neutrality is required.
+
+The differentiating dimension is **enterprise Azure orchestration plumbing vs. retrieval pipeline depth and cloud neutrality**.
+
+### Microsoft Agent Framework vs. Haystack
+
+Both frameworks take production reliability seriously and both have strong enterprise adoption, but they serve different primary concerns. Agent Framework is an orchestration platform — it manages how agents, workflows, and state interact in complex multi-step processes on Azure. Haystack is a retrieval platform — it manages how documents are ingested, searched, ranked, and synthesized into generation outputs. For European enterprises, Haystack's cloud-neutral, EU-hosted architecture is often a hard requirement that Agent Framework's Azure-first model cannot satisfy. For organizations already on Azure, combining Agent Framework orchestration with Azure AI Search or Hayhooks-served Haystack pipelines is a practical production architecture.
+
+**Choose Microsoft Agent Framework when:** Azure deployment, enterprise workflow orchestration, and .NET support are the primary requirements, and retrieval can be handled by Azure AI Search or an external tool.
+
+**Choose Haystack when:** retrieval quality, hybrid search depth, pipeline explainability, or EU data sovereignty requirements make a dedicated retrieval framework necessary — and cloud neutrality is a constraint.
+
+The differentiating dimension is **enterprise Azure orchestration vs. cloud-neutral retrieval pipeline sophistication**.
+
+### Microsoft Agent Framework vs. Mastra
+
+Agent Framework and Mastra serve different infrastructure profiles and different language ecosystems. Agent Framework is Python + .NET and Azure-committed, with its enterprise plumbing (Durable Functions, Foundry, Semantic Kernel middleware) deeply tied to the Azure stack. Mastra is TypeScript-native and cloud-agnostic, running on Cloudflare Workers, Vercel, and any Node.js environment. For organizations on Azure with .NET requirements, Agent Framework is the natural choice. For organizations running TypeScript services on cloud-neutral or non-Azure infrastructure, Mastra is the appropriate framework — it cannot match Agent Framework's enterprise compliance features, but its production tooling (memory, durable workflows, observability) is sufficient for most workloads outside regulated industries.
+
+**Choose Microsoft Agent Framework when:** your infrastructure is Azure, .NET support is required, or enterprise compliance features are non-negotiable.
+
+**Choose Mastra when:** your team is TypeScript-first, your infrastructure is cloud-neutral or non-Azure, and enterprise compliance plumbing is not a hard requirement.
+
+The differentiating dimension is **Azure enterprise compliance depth vs. TypeScript cloud-agnostic production stack**.
 
 ---
 
