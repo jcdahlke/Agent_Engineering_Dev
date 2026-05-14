@@ -2,6 +2,8 @@
 .env
 *.env
 
+Class_Transcripts/
+
 # Python
 __pycache__/
 *.py[cod]
